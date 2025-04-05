@@ -17,7 +17,6 @@ class MarkovRandomField:
         self._neighbors = defaultdict(set)  # N(v)
         self._domains = {}       # 𝒳 for each variable
         self._cpts = {}          # Conditional Probability Tables
-        self._index_map = {}     # Mapping between node names and indices
         
     def add_vertex(self, v: int, domain: List) -> None:
         """Add a vertex (node) with its possible values."""
@@ -26,8 +25,7 @@ class MarkovRandomField:
             
         self._vertices.add(v)
         self._domains[v] = domain
-        self._cpts[v] = {}      # initialize empty cpt for new vertex
-        self._index_map[v] = len(self._index_map)
+        self._cpts[v] = {}
         
     def add_edge(self, u: Any, v: Any) -> None:
         """Add an undirected edge between vertices u and v."""
