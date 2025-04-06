@@ -246,5 +246,5 @@ for i in range(0, height):
         # Add edge below the vertex
         if (i != height - 1): MRF.add_edge(vloc, vloc + width)
 
-# Auto propagate the CPTs
+# Auto propagate the CPTs with random probabilities
 MRF.auto_propagate_cpt()
