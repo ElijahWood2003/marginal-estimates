@@ -2,6 +2,7 @@
 import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
+from itertools import product
 
 class MarkovRandomField:
     def __init__(self):
@@ -37,15 +38,15 @@ class MarkovRandomField:
             self._edges.add(edge)
             self._neighbors[u].add(v)
             self._neighbors[v].add(u)
-            
+
     def set_cpt(self, v: Any, neighbor_config: Dict[Any, Any], probabilities: Dict[Any, float]) -> None:
         """
         Set conditional probability table for vertex v.
         
         Args:
             v: Target vertex
-            neighbor_config: Dictionary {neighbor: value} specifying the condition
-            probabilities: Dictionary {value: probability} for vertex v
+            neighbor_config: Dictionary {neighbor : value} specifying the condition
+            probabilities: Dictionary {value : probability} for vertex v
         """
         if v not in self._vertices:
             raise ValueError(f"Vertex {v} does not exist")
@@ -57,9 +58,11 @@ class MarkovRandomField:
             if value not in self._domains[neighbor]:
                 raise ValueError(f"Invalid value {value} for neighbor {neighbor}")
                 
-        # Validate probabilities
+        # Ensure the probabilities are a distribution
         if not np.isclose(sum(probabilities.values()), 1.0, atol=1e-6):
             raise ValueError("Probabilities must sum to 1")
+
+        # Ensure our values exist within the domain for the random variable
         for value, prob in probabilities.items():
             if value not in self._domains[v]:
                 raise ValueError(f"Invalid value {value} for vertex {v}")
@@ -159,7 +162,48 @@ class MarkovRandomField:
         samples = self.gibbs_sample(initial_config, num_samples=num_samples)
         count = sum(1 for sample in samples if sample[v] == value)
         return count / num_samples
+
+    def auto_propagate_cpt(self) -> None:
+        """
+        Automatically propagate the conditional probability
+        table with random values based on a default potential function
+
+        NOTE: this overwrites all cpts
+        """
+        cpts = defaultdict(dict)
+
+        for v in self._vertices:
+            neighbors = self._neighbors[v]
+            domain = self._domains[v]
+
+            # Generate all possible neighbor configurations
+            neighbor_domains = [self._domains[len(domain)] for n in neighbors]
+            for config in product(*neighbor_domains):
+                neighbor_assign = dict(zip(neighbors, config))
+
+                # Create random distribution with neighbor influence
+                if(neighbors):
+                    # Base probabilities with some neighbor influence
+                    probs = np.ones(len(domain))
+
+                    # For each neighbor, we want to increase the probability of matching its values
+                    for n, n_val in neighbor_assign.items():
+                        match_idx = domain.index(n_val)
+                        probs[match_idx] += 0.7 * np.random.uniform(0.5, 1.5)
+
+                    # Normalize to valid distribution
+                    probs /= probs.sum()
+                else:
+                    # No neighbors - uniform distribution
+                    probs = np.ones(len(domain) / len(domain))
+                
+                # Store with frozenset for hashable dict key
+                config_key = frozenset(neighbor_assign.items())
+                cpts[v][config_key] = dict(zip(domain, probs))
         
+        self._cpts = cpts
+
+
     # Additional utility methods
     def vertices(self) -> Set[Any]:
         """Get set of all vertices."""
@@ -176,3 +220,31 @@ class MarkovRandomField:
     def domain(self, v: Any) -> List[Any]:
         """Get possible values for vertex v."""
         return self._domains[v].copy()
+
+
+    # Binary 4x3-Neighborhood MRF Example
+# Initialize MRF
+MRF = MarkovRandomField()
+domain = [0, 1]     # Domain will be binary for each random variable
+height = 3
+width = 4
+
+# Create vertices labeled 0 -> 11
+for i in range(0, height * width):
+    # Add vertex
+    MRF.add_vertex(i, domain)
+
+# Create edges
+for i in range(0, height):
+    for j in range(0, width):
+        # Location of current vertex = (i * width + j)
+        vloc = i * width + j
+
+        # Add edge to the right of vertex
+        if (j != width - 1): MRF.add_edge(vloc, vloc + 1)
+
+        # Add edge below the vertex
+        if (i != height - 1): MRF.add_edge(vloc, vloc + width)
+
+# Auto propagate the CPTs
+MRF.auto_propagate_cpt()
