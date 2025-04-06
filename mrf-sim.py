@@ -143,6 +143,7 @@ class MarkovRandomField:
                 
         return samples
         
+    # TODO: get 'speed' of function
     def marginal_probability(self, v: Any, value: Any, num_samples: int = 10000) -> float:
         """
         Estimate marginal probability Pr(X_v = value) using Gibbs sampling.
@@ -248,3 +249,6 @@ for i in range(0, height):
 
 # Auto propagate the CPTs with random probabilities
 MRF.auto_propagate_cpt()
+
+# Testing marginal probability
+print(MRF.marginal_probability(0, 0))
