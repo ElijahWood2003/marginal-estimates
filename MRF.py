@@ -20,7 +20,7 @@ class MarkovRandomField:
         self._cpts = {}          # Conditional Probability Tables
         
     def add_vertex(self, v: int, domain: List) -> None:
-        """Add a vertex (node) with its possible values."""
+        """Add a vertex (node) with its possible values"""
         if (v in self._vertices):
             raise ValueError(f"Vertex {v} already exists")
             
@@ -28,8 +28,8 @@ class MarkovRandomField:
         self._domains[v] = domain
         self._cpts[v] = {}
         
-    def add_edge(self, u: Any, v: Any) -> None:
-        """Add an undirected edge between vertices u and v."""
+    def add_edge(self, u: int, v: int) -> None:
+        """Add an undirected edge between vertices u and v"""
         if (u not in self._vertices or v not in self._vertices):
             raise ValueError("Both vertices must exist")
             
@@ -39,9 +39,9 @@ class MarkovRandomField:
             self._neighbors[u].add(v)
             self._neighbors[v].add(u)
 
-    def set_cpt(self, v: Any, neighbor_config: Dict[Any, Any], probabilities: Dict[Any, float]) -> None:
+    def set_cpt(self, v: int, neighbor_config: Dict[int, int], probabilities: Dict[int, float]) -> None:
         """
-        Set conditional probability table for vertex v.
+        Set conditional probability table for vertex v
         
         Args:
             v: Target vertex
@@ -71,9 +71,9 @@ class MarkovRandomField:
         config_key = frozenset(neighbor_config.items())
         self._cpts[v][config_key] = probabilities.copy()
         
-    def get_conditional_probability(self, v: Any, value: Any, neighbor_values: Dict[Any, Any]) -> float:
+    def get_conditional_probability(self, v: int, value: int, neighbor_values: Dict[int, int]) -> float:
         """
-        Get Pr(X_v = value | X_N(v) = neighbor_values).
+        Get Pr(X_v = value | X_N(v) = neighbor_values)
         
         Args:
             v: Target vertex
@@ -86,7 +86,7 @@ class MarkovRandomField:
         config_key = frozenset(neighbor_values.items())
         return self._cpts[v].get(config_key, {}).get(value, 0.0)
         
-    def joint_probability(self, configuration: Dict[Any, Any]) -> float:
+    def joint_probability(self, configuration: Dict[int, int]) -> float:
         """
         Compute the joint probability Pr(x) = ∏_i Pr_i(x_i | x_N(i))
         
@@ -104,9 +104,9 @@ class MarkovRandomField:
             prob *= cond_prob
         return prob
         
-    def gibbs_sample(self, initial_config: Dict[Any, Any], num_samples: int = 1000, burn_in: int = 100) -> List[Dict[Any, Any]]:
+    def gibbs_sample(self, initial_config: Dict[int, int], num_samples: int = 1000, burn_in: int = 100) -> List[Dict[int, int]]:
         """
-        Perform Gibbs sampling to generate samples from the MRF.
+        Perform Gibbs sampling to generate samples from the MRF
         
         Args:
             initial_config: Starting configuration
@@ -145,9 +145,9 @@ class MarkovRandomField:
         return samples
         
     # TODO: track 'speed' of function
-    def marginal_probability(self, v: Any, value: Any, num_samples: int = 10000) -> float:
+    def marginal_probability(self, v: int, value: int, num_samples: int = 10000) -> float:
         """
-        Estimate marginal probability Pr(X_v = value) using Gibbs sampling.
+        Estimate marginal probability Pr(X_v = value) using Gibbs sampling
         
         Args:
             v: Vertex of interest
@@ -208,19 +208,19 @@ class MarkovRandomField:
 
     # Additional utility methods
     def vertices(self) -> Set[Any]:
-        """Get set of all vertices."""
+        """Get set of all vertices"""
         return self._vertices.copy()
         
     def edges(self) -> Set[FrozenSet[Any]]:
-        """Get set of all edges."""
+        """Get set of all edges"""
         return self._edges.copy()
         
     def neighbors(self, v: Any) -> Set[Any]:
-        """Get neighbors of vertex v."""
+        """Get neighbors of vertex v"""
         return self._neighbors[v].copy()
         
     def domain(self, v: Any) -> List[Any]:
-        """Get possible values for vertex v."""
+        """Get possible values for vertex v"""
         return self._domains[v].copy()
 
 
