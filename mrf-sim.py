@@ -21,7 +21,7 @@ class MarkovRandomField:
         
     def add_vertex(self, v: int, domain: List) -> None:
         """Add a vertex (node) with its possible values."""
-        if v in self._vertices:
+        if (v in self._vertices):
             raise ValueError(f"Vertex {v} already exists")
             
         self._vertices.add(v)
@@ -30,11 +30,11 @@ class MarkovRandomField:
         
     def add_edge(self, u: Any, v: Any) -> None:
         """Add an undirected edge between vertices u and v."""
-        if u not in self._vertices or v not in self._vertices:
+        if (u not in self._vertices or v not in self._vertices):
             raise ValueError("Both vertices must exist")
             
         edge = frozenset({u, v})
-        if edge not in self._edges:
+        if (edge not in self._edges):
             self._edges.add(edge)
             self._neighbors[u].add(v)
             self._neighbors[v].add(u)
@@ -48,23 +48,23 @@ class MarkovRandomField:
             neighbor_config: Dictionary {neighbor : value} specifying the condition
             probabilities: Dictionary {value : probability} for vertex v
         """
-        if v not in self._vertices:
+        if (v not in self._vertices):
             raise ValueError(f"Vertex {v} does not exist")
             
         # Validate neighbor configuration
         for neighbor, value in neighbor_config.items():
-            if neighbor not in self._neighbors[v]:
+            if (neighbor not in self._neighbors[v]):
                 raise ValueError(f"{neighbor} is not a neighbor of {v}")
-            if value not in self._domains[neighbor]:
+            if (value not in self._domains[neighbor]):
                 raise ValueError(f"Invalid value {value} for neighbor {neighbor}")
                 
         # Ensure the probabilities are a distribution
-        if not np.isclose(sum(probabilities.values()), 1.0, atol=1e-6):
+        if not (np.isclose(sum(probabilities.values()), 1.0, atol=1e-6)):
             raise ValueError("Probabilities must sum to 1")
 
         # Ensure our values exist within the domain for the random variable
         for value, prob in probabilities.items():
-            if value not in self._domains[v]:
+            if (value not in self._domains[v]):
                 raise ValueError(f"Invalid value {value} for vertex {v}")
                 
         # Use frozenset for hashable neighbor configuration
@@ -119,7 +119,7 @@ class MarkovRandomField:
         samples = []
         current_config = initial_config.copy()
         
-        for _ in range(burn_in + num_samples):
+        for i in range(burn_in + num_samples):
             # Visit vertices in random order
             for v in np.random.permutation(list(self._vertices)):
                 neighbors = self._neighbors[v]
@@ -129,7 +129,7 @@ class MarkovRandomField:
                 config_key = frozenset(neighbor_values.items())
                 cond_dist = self._cpts[v].get(config_key, None)
                 
-                if cond_dist is None:
+                if (cond_dist is None):
                     # If no CPT entry exists, use uniform distribution
                     cond_dist = {val: 1.0/len(self._domains[v]) for val in self._domains[v]}
                 
@@ -137,8 +137,9 @@ class MarkovRandomField:
                 values, probs = zip(*cond_dist.items())
                 new_value = np.random.choice(values, p=probs)
                 current_config[v] = new_value
-            
-            if _ >= burn_in:
+
+            # Only add to samples if we are past burn in value
+            if (i >= burn_in):
                 samples.append(current_config.copy())
                 
         return samples
@@ -178,7 +179,7 @@ class MarkovRandomField:
             domain = self._domains[v]
 
             # Generate all possible neighbor configurations
-            neighbor_domains = [self._domains[len(domain)] for n in neighbors]
+            neighbor_domains = [self._domains[len(domain)] for _ in neighbors]
             for config in product(*neighbor_domains):
                 neighbor_assign = dict(zip(neighbors, config))
 
@@ -249,6 +250,8 @@ for i in range(0, height):
 
 # Auto propagate the CPTs with random probabilities
 MRF.auto_propagate_cpt()
+
+# TODO: Gibbs sampling testing / example
 
 # Testing marginal probability of P(state(0) == 0)
 print(MRF.marginal_probability(0, 0))
