@@ -251,7 +251,5 @@ for i in range(0, height):
 # Auto propagate the CPTs with random probabilities
 MRF.auto_propagate_cpt()
 
-# TODO: Gibbs sampling testing / example
-
 # Testing marginal probability of P(state(0) == 0)
 print(MRF.marginal_probability(0, 0))
