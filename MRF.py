@@ -14,7 +14,7 @@ class MarkovRandomField:
         - CPTs for each node: Pr_v(x_i | x_N(i))
         """
         self._vertices = set()   # V
-        self._edges = set()      # A (as frozenset pairs)
+        self._edges = set()      # A (set of frozenset pairs)
         self._neighbors = defaultdict(set)  # N(v)
         self._domains = {}       # 𝒳 for each variable
         self._cpts = {}          # Conditional Probability Tables
