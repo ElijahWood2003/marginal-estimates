@@ -1,9 +1,9 @@
-# Efficient Marginal Distribution Estimation in Markov Random Fields
+# Marginal Distribution Estimates in Markov Random Fields
 
-**Researcher**: [Elijah Wood]  
+**Researcher**: Elijah Wood 
 **Institution**: University of North Carolina at Chapel Hill  
-**Date**: [April 2025]  
-**Advisor**: [P.S. Thiagarajan]  
+**Date**: April 2025
+**Advisor**: P.S. Thiagarajan  
 
 ![MRF Visualization Example](images/mrf_visualization.png)  
 *Example output from the MRF simulator showing node states evolving over time*
@@ -19,19 +19,17 @@ Developed as part of undergraduate research at UNC Chapel Hill, this work focuse
 
 ## Key Features
 
-### MRF Implementation
+### MRF Simulation
+- Includes hashing for efficient conditional probability tables (CPTs)
+- Auto propagate CPT over all domains with random values
 - Gibbs sampling with configurable burn-in and thinning
-- Neighbor-aware conditional probability tables (CPTs)
-- Interactive Tkinter visualization
-- Console-based ASCII visualization
-- Automatic CPT propagation
 
-### LAS Algorithm
-- Location-aware sampling for variance reduction
-- Adaptive neighborhood weighting
-- Convergence diagnostics
+### LAS Marked Graph
+- Live-and-Safe Marked Graphs for conversion to FMDP
+- Easy conversion from MRF to LAS
+- Automatically sets tokens based on acyclic orientation
 
-### FMDP Extension
-- Factored state representation
-- Approximate dynamic programming
-- Integration with MRF inference
+### Factored MDP Extension
+- Factored MDP simulation for stationary distributions
+- Easy conversion from MRF -> LAS -> FMDP
+- Uses properties inherent in creation to estimate MRF distribution
