@@ -16,9 +16,9 @@ class LiveAndSafe:
     - M_in: E -> {0, 1}
     """
     def __init__(self):
-        self._vertices = set(int)               # V
-        self._edges = {int : list(int)}         # E (as adjacency list)
-        self._tokens = {tuple : int}            # M dict((u, v) : {0, 1}) where 1 represents a token at edge (u, v)
+        self._vertices = set()   # V
+        self._edges = {}         # E (as adjacency list)
+        self._tokens = {}        # M dict((u, v) : {0, 1}) where 1 represents a token at edge (u, v)
     
     def add_vertex(self, v: int) -> None:
         """Add a vertex to the set"""
@@ -43,7 +43,7 @@ class LiveAndSafe:
          - Iterate through all edges (u, v)
          - If u > v set _tokens[(u, v)] = 1
          - Otherwise -> _tokens[(u, v)] = 0
-        This sets tokens based on an acyclic orientation
+        This sets tokens based on an acyclic orientation where edges point towards 0
         
         Args:
             edges: set of frozenset pairs of edges (for easy MRF -> LAS conversion)
@@ -73,3 +73,6 @@ LAS = LiveAndSafe()
 # Use MRF to add vertices / edges
 LAS.set_vertices(MRF.vertices())
 LAS.set_edges(MRF.edges())
+
+print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
+print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
