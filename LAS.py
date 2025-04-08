@@ -10,15 +10,15 @@ class LiveAndSafe:
     Directed graph with tokens on edges representing activation points
     For our purposes it will be strictly strongly connected graphs
 
-    Initialize with the following information:
+    Initialize an empty LAS with the following information:
     - V: vertices labeled 0 -> n
     - E: edges in an adjacency list
     - M_in: E -> {0, 1}
     """
     def __init__(self):
-        self._vertices = set()   # V
-        self._edges = {}         # E (as adjacency list)
-        self._tokens = {}        # M dict((u, v) : {0, 1}) where 1 represents a token at edge (u, v)
+        self._vertices = set(int)               # V
+        self._edges = {int : list(int)}         # E (as adjacency list)
+        self._tokens = {tuple : int}            # M dict((u, v) : {0, 1}) where 1 represents a token at edge (u, v)
     
     def add_vertex(self, v: int) -> None:
         """Add a vertex to the set"""
