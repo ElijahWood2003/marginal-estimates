@@ -25,10 +25,10 @@ class FMDP:
     - Q: queue (FIFO) of enabled actions
     """
     def __init__(self):
-        actions = set(int)              # Actions in FMDP
-        components = set(tuple)         # Components of FMDP
-        loc = {int : list(tuple)}       # Action -> Component map
-        states = {tuple : list(Any)}    # Component -> Token direction map
-        queue = list(int)               # Queue of enabled actions
+        actions = set()         # Actions in FMDP
+        components = set()      # Components of FMDP
+        loc = {}                # Action -> Component map
+        states = {}             # Component -> Token direction map
+        queue = list()          # Queue of enabled actions
         
         
