@@ -2,7 +2,7 @@
 
 **Researcher**: Elijah Wood 
 **Institution**: University of North Carolina at Chapel Hill  
-**Date**: April 2025
+**Date**: April 2025  
 **Advisor**: P.S. Thiagarajan  
 
 ![MRF Visualization Example](images/mrf_visualization.png)  
@@ -11,8 +11,8 @@
 ## Project Overview
 
 This repository contains Python implementations for:
-- **Markov Random Fields (MRF)**: Gibbs sampling, marginal distribution estimation and example MRF
-- **LAS (Live-And-Safe Marked Graph)**: 
+- **Markov Random Fields (MRF)**: Gibbs sampling, marginal distribution estimation, CPT auto-propagation
+- **LAS (Live-And-Safe Marked Graph)**: MRF to LAS conversion, auto-tokenizer
 - **Factored MDPs (FMDP)**: 
 
 Developed as part of undergraduate research at UNC Chapel Hill, this work focuses on developing computationally efficient methods for estimating marginal distributions in MRFs, with applications in computer vision, spatial statistics, and probabilistic graphical models.
