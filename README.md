@@ -1,4 +1,4 @@
-# Marginal Distribution Estimates in Markov Random Fields
+# Marginal Distribution Estimates of Markov Random Fields
 
 **Researcher**: Elijah Wood 
 **Institution**: University of North Carolina at Chapel Hill  
