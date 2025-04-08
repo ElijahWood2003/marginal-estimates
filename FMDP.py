@@ -34,5 +34,7 @@ class FMDP:
         self._states = {}             # Component -> Token direction map
         self._queue = list()          # Queue of enabled actions
         self._tokens = {}             # Map of actions -> # of neighbors and # of tokens
-        
+
+
+# TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         
