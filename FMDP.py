@@ -23,12 +23,16 @@ class FMDP:
                 assumed that the index of u = 0, index of v = 1, and index of token direction = 2;
                 further, it will be assumed u < v in the list and component
     - Q: queue (FIFO) of enabled actions
+    - T: Dictionary (action : tuple(neighbor-count, token-count))
+        - We can use these values to easily check if an action should be enabled
+          (Action = enabled iff neighbor-count == token-count)
     """
     def __init__(self):
-        actions = set()         # Actions in FMDP
-        components = set()      # Components of FMDP
-        loc = {}                # Action -> Component map
-        states = {}             # Component -> Token direction map
-        queue = list()          # Queue of enabled actions
+        self._actions = set()         # Actions in FMDP
+        self._components = set()      # Components of FMDP
+        self._loc = {}                # Action -> Component map
+        self._states = {}             # Component -> Token direction map
+        self._queue = list()          # Queue of enabled actions
+        self._tokens = {}             # Map of actions -> # of neighbors and # of tokens
         
         
