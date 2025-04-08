@@ -3,7 +3,7 @@ import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
-from MRF import MarkovRandomField
+from MRF import MarkovRandomField, MRF
 
 class LiveAndSafe:
     """
@@ -50,8 +50,12 @@ class LiveAndSafe:
         """
         for edge in edges:
             # Edge (u, v)
-            u = edge[0]
-            v = edge[1]
+            edge_list = []
+            for v in edge:
+                edge_list.append(v)
+                
+            u = edge_list[0]
+            v = edge_list[1]
             
             # Add an edge for both direction
             self.add_edge(u, v)
@@ -60,4 +64,12 @@ class LiveAndSafe:
             # Set tokens based on acyclic orientation
             self._tokens[(u, v)] = int(u > v)
             self._tokens[(v, u)] = int(u < v)
-        
+
+
+    # Example LAS based on 4x3 Neighborhood MRF
+# Initialize LAS
+LAS = LiveAndSafe()
+
+# Use MRF to add vertices / edges
+LAS.set_vertices(MRF.vertices())
+LAS.set_edges(MRF.edges())

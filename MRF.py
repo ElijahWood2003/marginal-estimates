@@ -207,19 +207,19 @@ class MarkovRandomField:
 
 
     # Additional utility methods
-    def vertices(self) -> Set[Any]:
+    def vertices(self) -> Set[int]:
         """Get set of all vertices"""
         return self._vertices.copy()
         
-    def edges(self) -> Set[FrozenSet[Any]]:
+    def edges(self) -> Set[FrozenSet[int]]:
         """Get set of all edges"""
         return self._edges.copy()
         
-    def neighbors(self, v: Any) -> Set[Any]:
+    def neighbors(self, v: Any) -> Set[int]:
         """Get neighbors of vertex v"""
         return self._neighbors[v].copy()
         
-    def domain(self, v: Any) -> List[Any]:
+    def domain(self, v: Any) -> List[int]:
         """Get possible values for vertex v"""
         return self._domains[v].copy()
 
