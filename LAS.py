@@ -34,8 +34,8 @@ class LiveAndSafe:
         """Set the vertices based on input set"""
         self._vertices = vertices
         
-    # TODO: Make acyclic orientation point to specific vertex
-    def set_edges(self, edges: set) -> None:
+    # TODO: implement ptr
+    def set_edges(self, edges: set, ptr: int = 0) -> None:
         """
         Set the edges based on the input edges set
         
@@ -47,6 +47,7 @@ class LiveAndSafe:
         
         Args:
             edges: set of frozenset pairs of edges (for easy MRF -> LAS conversion)
+            ptr: integer representing the vertex to point the acyclic orientation towards (default = 0)
         """
         for edge in edges:
             # Edge (u, v)

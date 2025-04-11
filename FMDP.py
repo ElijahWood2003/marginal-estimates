@@ -16,9 +16,8 @@ class FMDP:
     
     Initialize an empty FMDP with the following information: 
     - V: Set of actions
-    - P: Set of edges as a tuple (u, v)
     - loc(v): Dictionary (action : list of components it is a member of)
-    - S Components: Dictionary (Component : list in form [x_u, x_v, (token direction)])
+    - S Components: Dictionary (() : list in form [x_u, x_v, (token direction)])
         - Note: the list is meant to be a set, but for the sake of accessibility it will be
                 assumed that the index of u = 0, index of v = 1, and index of token direction = 2;
                 further, it will be assumed u < v in the list and component
@@ -29,12 +28,26 @@ class FMDP:
     """
     def __init__(self):
         self._actions = set()         # Actions in FMDP
-        self._components = set()      # Components of FMDP
+        self._components = {}         # Map of set{u, v} : [val(u), val(v), direction of token (tuple)]
         self._loc = {}                # Action -> Component map
-        self._states = {}             # Component -> Token direction map
         self._queue = list()          # Queue of enabled actions
         self._tokens = {}             # Map of actions -> # of neighbors and # of tokens
+        self._cpt = {}                # CPT
 
+    def add_action(self, action: int) -> None:
+        """Add an action to the set"""
+        self._actions.add(action)
+
+    def add_component(self, edge: set, uval: int, vval: int, dir: tuple):
+        """Add a component to the map edge : [uval, vval, (u, v)/(v, u)]
+        
+        Args:
+            edge: a set {u, v} representing the edge
+            uval:
+            vval:
+            dir:
+        """
+        self._components[set()]
 
 # TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         
