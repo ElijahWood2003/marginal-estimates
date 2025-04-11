@@ -18,7 +18,7 @@ class MarkovRandomField:
         self._edges = set()      # A (set of frozenset pairs)
         self._neighbors = defaultdict(set)  # N(v)
         self._domains = {}       # 𝒳 for each variable
-        self._cpts = {}          # Conditional Probability Tables
+        self._cpts = {}          # CPT
         
     def add_vertex(self, v: int, domain: List) -> None:
         """Add a vertex (node) with its possible values"""

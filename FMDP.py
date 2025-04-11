@@ -29,7 +29,7 @@ class FMDP:
     def __init__(self):
         self._actions = set()         # Actions in FMDP
         self._components = {}         # Map of set{u, v} : [val(u), val(v), direction of token (tuple)]
-        self._loc = {}                # Action -> Component map
+        self._edges = {}              # Edges dict(action : set(actions))
         self._queue = list()          # Queue of enabled actions
         self._tokens = {}             # Map of actions -> # of neighbors and # of tokens
         self._cpt = {}                # CPT
@@ -38,16 +38,28 @@ class FMDP:
         """Add an action to the set"""
         self._actions.add(action)
 
-    def add_component(self, edge: set, uval: int, vval: int, dir: tuple):
-        """Add a component to the map edge : [uval, vval, (u, v)/(v, u)]
+    def add_component(self, edge: set, uval: int, vval: int, dir: tuple) -> None:
+        """Add a component to the map -> set(u, v) : [uval, vval, (u, v)/(v, u)]
         
         Args:
             edge: a set {u, v} representing the edge
-            uval:
-            vval:
-            dir:
+            uval: value of action u
+            vval: value of action v
+            dir: direction of token as a tuple (u, v) or (v, u)
         """
         self._components[set()]
+
+    def add_loc(self, u: int, v: int) -> None:
+        """Add the connection (u, v) to edges
+        
+        Args:
+            u: primary action
+            v: connection action to primary action
+        """
+        if u not in self._edges:
+            self._edges[u] = set()
+        
+        self._edges[u].add(v)
 
 # TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         
