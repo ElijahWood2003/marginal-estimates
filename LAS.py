@@ -34,6 +34,7 @@ class LiveAndSafe:
         """Set the vertices based on input set"""
         self._vertices = vertices
         
+    # TODO: Make acyclic orientation point to specific vertex
     def set_edges(self, edges: set) -> None:
         """
         Set the edges based on the input edges set

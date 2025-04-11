@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
 
+# TODO: Make nodes anything not just integers
 class MarkovRandomField:
     def __init__(self):
         """
