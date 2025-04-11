@@ -3,7 +3,6 @@ import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
-from MRF import MarkovRandomField, MRF
 
 class LiveAndSafe:
     """
@@ -67,6 +66,8 @@ class LiveAndSafe:
 
 
     # Example LAS based on 4x3 Neighborhood MRF
+from MRF import MRF
+
 # Initialize LAS
 LAS = LiveAndSafe()
 
