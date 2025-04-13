@@ -235,8 +235,8 @@ prob = FMDP.marginal_probability(0, 0)
 end = time.perf_counter()
 
 time_elapsed = end - start
-print(f"FMDP sampling estimate took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 0): {prob}")
+print(f"FMDP sampling took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob} \n")
 
 # TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         
