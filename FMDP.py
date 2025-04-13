@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
 from MRF import MarkovRandomField, MRF
 
-class FMDP:
+class FactoredMarkovDecisionProcess:
     """
     MDP factored into components.
     Easily converted from LAS and MRF structures.
@@ -31,7 +31,7 @@ class FMDP:
         self._components = {}         # Map of frozenset{u, v} : [val(u), val(v), direction of token (tuple)]
         self._edges = {}              # Edges dict(action : list of connected actions])
         self._queue = []              # Queue of enabled actions
-        self._cpt = {}                # CPT
+        self._cpts = {}                # CPT
         self._domains = {}            # Domains as dict(action : list(values)) for each action
 
         self._values = {}             # Dictionary (action : value)
@@ -92,6 +92,12 @@ class FMDP:
     def set_actions(self, actions: set) -> None:
         """Set the actions based on input set"""
         self._actions = actions
+        for action in self._actions:
+            self._token_count[action] = [0, 0]
+
+    def set_domains(self, domains: dict) -> None:
+        """Set the domains based on the input dict"""
+        self._domains = domains
     
     def set_edges(self, edges: dict) -> None:
         """
@@ -101,6 +107,8 @@ class FMDP:
             edges: a dictionary of edges assumed to be an adjacency list 
         """
         self._edges = edges
+        for action in self._edges.keys():
+            self._token_count[action][self.LOC_NEIGHBOR_COUNT] = len(self._edges[action])
     
     def set_components(self, tokens: dict) -> None:
         """
@@ -121,10 +129,15 @@ class FMDP:
 
                 # self.add_component({u, v}, (u, v))
     
-    def set_cpt(self, cpt: dict) -> None:
+    def set_cpts(self, cpts: dict) -> None:
         """Set CPT table based on an input CPT"""
-        self._cpt = cpt
+        self._cpts = cpts
             
+    def set_random_values(self) -> None:
+        """Sets random initial values for each action"""
+        if(self._domains):
+            for action, domain in self._domains.items():
+                self._values[action] = np.random.choice(domain)
 
     def activate_action(self, action: int) -> int:
         """
@@ -142,7 +155,7 @@ class FMDP:
         # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
         neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
         for a in self._edges[action]:
-            neighbor_set.add((a, self._values[a]))
+            neighbor_set.add((a, int(self._values[a])))
 
             self._token_count[a][self.LOC_TOKEN_COUNT] += 1
             if(self._token_count[a][self.LOC_TOKEN_COUNT] == self._token_count[a][self.LOC_NEIGHBOR_COUNT]):
@@ -150,16 +163,74 @@ class FMDP:
         
         self._token_count[action][self.LOC_TOKEN_COUNT] = 0
 
-        probabilities = self._cpt[action][frozenset(neighbor_set)]
-        value = np.random.choice(probabilities.keys(), p=probabilities.values())
+        probabilities = self._cpts[action][frozenset(neighbor_set)]
+        domains, probs = zip(*probabilities.items())
+        value = np.random.choice(domains, p=probs)
         self._values[action] = value
 
         return value
-
-
+    
+    def sample(self, num_samples: int = 1000, burn_in: int = 100, initial_config: dict[int, int] = None) -> List[Dict[int, int]]:
+        """
+        Sample the FMDP
         
+        Args:
+            initial_config: Starting configuration
+            num_samples: Number of samples to generate
+            burn_in: Number of burn-in iterations
+            
+        Returns:
+            List of sampled configurations
+        """
+        if(initial_config):
+            self._values = initial_config
+
+        samples = []
+        current_config = self._values.copy() 
+        
+        for i in range(burn_in + num_samples):
+            action = self._queue.pop(0)
+            new_value = self.activate_action(action)
+            current_config[action] = new_value
+
+            # Only add to samples if we are past burn in value
+            if (i >= burn_in):
+                samples.append(current_config.copy())
+                
+        return samples
+    
+    def marginal_probability(self, a: int, value: int, num_samples: int = 10000) -> float:
+        """
+        Estimate marginal probability Pr(X_v = value) of FMDP action
+        
+        Args:
+            a: Action of interest
+            value: Value to estimate probability for
+            num_samples: Number of samples to use for estimation
+            
+        Returns:
+            Estimated marginal probability
+        """
+        
+        samples = self.sample(num_samples=num_samples)
+        count = sum(1 for sample in samples if sample[a] == value)
+        return count / num_samples
 
 
+        # Example FMDP based on 4x3 Neighborhood MRF
+from MRF import MRF
+from LAS import LAS
+
+FMDP = FactoredMarkovDecisionProcess()
+FMDP.set_actions(MRF.vertices())
+FMDP.set_edges(LAS.get_edges())
+FMDP.set_components(LAS.get_tokens())
+FMDP.set_domains(MRF.get_domains())
+FMDP.set_cpts(MRF.get_cpts())
+FMDP.set_random_values()
+
+mp = FMDP.marginal_probability(0, 0)
+print(mp)
 
 # TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         

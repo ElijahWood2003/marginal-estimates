@@ -34,7 +34,7 @@ class LiveAndSafe:
         """Set the vertices based on input set"""
         self._vertices = vertices
         
-    # TODO: implement ptr
+    # TODO: Implement ptr
     def set_edges(self, edges: set, ptr: int = 0) -> None:
         """
         Set the edges based on the input edges set
@@ -47,7 +47,7 @@ class LiveAndSafe:
         
         Args:
             edges: set of frozenset pairs of edges (for easy MRF -> LAS conversion)
-            ptr: integer representing the vertex to point the acyclic orientation towards (default = 0)
+            ptr: pointer vertex to direct acyclic orientation towards
         """
         for edge in edges:
             # Edge (u, v)
@@ -66,6 +66,13 @@ class LiveAndSafe:
             self._tokens[(u, v)] = int(u > v)
             self._tokens[(v, u)] = int(u < v)
 
+    def get_edges(self) -> dict:
+        """Get edges returns the edge adjacency list"""
+        return self._edges
+    
+    def get_tokens(self) -> dict:
+        """Get tokens as a dictionary"""
+        return self._tokens
 
     # Example LAS based on 4x3 Neighborhood MRF
 from MRF import MRF
@@ -77,5 +84,5 @@ LAS = LiveAndSafe()
 LAS.set_vertices(MRF.vertices())
 LAS.set_edges(MRF.edges())
 
-print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
-print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
+# print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
+# print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)

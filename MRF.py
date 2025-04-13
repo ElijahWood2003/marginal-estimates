@@ -223,6 +223,14 @@ class MarkovRandomField:
     def domain(self, v: Any) -> List[int]:
         """Get possible values for vertex v"""
         return self._domains[v].copy()
+    
+    def get_domains(self) -> dict:
+        """Get all domains across the dictionary"""
+        return self._domains
+    
+    def get_cpts(self) -> dict:
+        """Get cpts of MRF"""
+        return self._cpts
 
 
     # Binary 4x3-Neighborhood MRF Example
