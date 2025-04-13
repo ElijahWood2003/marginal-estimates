@@ -1,6 +1,6 @@
 # Marginal Distribution Estimates of Markov Random Fields
 
-**Researcher**: Elijah Wood 
+**Researcher**: Elijah Wood    
 **Institution**: University of North Carolina at Chapel Hill  
 **Date**: April 2025  
 **Advisor**: P.S. Thiagarajan  
