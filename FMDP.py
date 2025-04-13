@@ -2,8 +2,6 @@
 import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
-from itertools import product
-# from MRF import MarkovRandomField
 import time
 
 class FactoredMarkovDecisionProcess:
