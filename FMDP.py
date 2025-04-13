@@ -28,17 +28,18 @@ class FMDP:
     """
     def __init__(self):
         self._actions = set()         # Actions in FMDP
-        self._components = {}         # Map of set{u, v} : [val(u), val(v), direction of token (tuple)]
-        self._edges = {}              # Edges dict(action : set(actions))
+        self._components = {}         # Map of frozenset{u, v} : [val(u), val(v), direction of token (tuple)]
+        self._edges = {}              # Edges dict(action : list of connected actions])
         self._queue = list()          # Queue of enabled actions
         self._tokens = {}             # Map of actions -> # of neighbors and # of tokens
         self._cpt = {}                # CPT
+        self._values = {}             # Dictionary (action : current value)
 
     def add_action(self, action: int) -> None:
         """Add an action to the set"""
         self._actions.add(action)
 
-    def add_component(self, edge: set, uval: int, vval: int, dir: tuple) -> None:
+    def add_component(self, edge: set, dir: tuple) -> None:
         """Add a component to the map -> set(u, v) : [uval, vval, (u, v)/(v, u)]
         
         Args:
@@ -47,19 +48,35 @@ class FMDP:
             vval: value of action v
             dir: direction of token as a tuple (u, v) or (v, u)
         """
-        self._components[set()]
+        # As stated above, u < v
+        u = dir[int(dir[0] > dir[1])]
+        v = dir[int(dir[0] < dir[1])]
 
-    def add_loc(self, u: int, v: int) -> None:
+        # Ensure the pointer to the values map is stored, not the value itself
+        # This means whenever we update the values within the value map each of the component values will change inherently
+        self._components[edge] = [self._values[u], self._values[v], dir]
+
+    def add_edge(self, u: int, v: int) -> None:
         """Add the connection (u, v) to edges
         
         Args:
-            u: primary action
-            v: connection action to primary action
+            u: the input edge
+            v: the output edge
         """
         if u not in self._edges:
-            self._edges[u] = set()
+            self._edges[u] = []
         
-        self._edges[u].add(v)
+        self._edges[u].append(v)
+    
+    def set_value(self, u: int, val: int) -> None:
+        """Set the value of action u to the val
+        
+        Args:
+            u: the action we want to set the value of
+            val: the value we want to set the action to
+        """
+        self._values[u] = val
+
 
 # TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         
