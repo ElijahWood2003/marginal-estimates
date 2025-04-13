@@ -32,7 +32,7 @@ for i in range(0, height):
 MRF.auto_propagate_cpt()
 
 # Testing marginal probability of P(state(0) == 0)
-num_samples = 10000
+num_samples = 100000
 start = time.perf_counter()
 prob = MRF.marginal_probability(0, 0, num_samples=num_samples)
 end = time.perf_counter()
@@ -63,7 +63,7 @@ FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
 # Testing and tracking time
-num_samples = 10000
+num_samples = 100000
 start = time.perf_counter()
 prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
 end = time.perf_counter()

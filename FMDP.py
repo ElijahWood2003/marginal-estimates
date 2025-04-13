@@ -32,7 +32,7 @@ class FactoredMarkovDecisionProcess:
         self._components = {}         # Map of frozenset{u, v} : [val(u), val(v), direction of token (tuple)]
         self._edges = {}              # Edges dict(action : list of connected actions])
         self._queue = []              # Queue of enabled actions
-        self._cpts = {}                # CPT
+        self._cpts = {}               # CPT
         self._domains = {}            # Domains as dict(action : list(values)) for each action
 
         self._values = {}             # Dictionary (action : value)
