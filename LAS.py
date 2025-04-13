@@ -3,14 +3,13 @@ import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
-from MRF import MarkovRandomField, MRF
 
 class LiveAndSafe:
     """
     Directed graph with tokens on edges representing activation points
     For our purposes it will be strictly strongly connected graphs
 
-    Initialize with the following information:
+    Initialize an empty LAS with the following information:
     - V: vertices labeled 0 -> n
     - E: edges in an adjacency list
     - M_in: E -> {0, 1}
@@ -35,7 +34,8 @@ class LiveAndSafe:
         """Set the vertices based on input set"""
         self._vertices = vertices
         
-    def set_edges(self, edges: set) -> None:
+    # TODO: Implement ptr
+    def set_edges(self, edges: set, ptr: int = 0) -> None:
         """
         Set the edges based on the input edges set
         
@@ -43,10 +43,11 @@ class LiveAndSafe:
          - Iterate through all edges (u, v)
          - If u > v set _tokens[(u, v)] = 1
          - Otherwise -> _tokens[(u, v)] = 0
-        This sets tokens based on an acyclic orientation
+        This sets tokens based on an acyclic orientation where edges point towards 0
         
         Args:
             edges: set of frozenset pairs of edges (for easy MRF -> LAS conversion)
+            ptr: pointer vertex to direct acyclic orientation towards
         """
         for edge in edges:
             # Edge (u, v)
@@ -65,11 +66,23 @@ class LiveAndSafe:
             self._tokens[(u, v)] = int(u > v)
             self._tokens[(v, u)] = int(u < v)
 
+    def get_edges(self) -> dict:
+        """Get edges returns the edge adjacency list"""
+        return self._edges
+    
+    def get_tokens(self) -> dict:
+        """Get tokens as a dictionary"""
+        return self._tokens
 
     # Example LAS based on 4x3 Neighborhood MRF
+from MRF import MRF
+
 # Initialize LAS
 LAS = LiveAndSafe()
 
 # Use MRF to add vertices / edges
 LAS.set_vertices(MRF.vertices())
 LAS.set_edges(MRF.edges())
+
+# print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
+# print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)

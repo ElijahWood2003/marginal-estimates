@@ -3,7 +3,9 @@ import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
+import time
 
+# TODO: Make nodes anything not just integers
 class MarkovRandomField:
     def __init__(self):
         """
@@ -17,7 +19,7 @@ class MarkovRandomField:
         self._edges = set()      # A (set of frozenset pairs)
         self._neighbors = defaultdict(set)  # N(v)
         self._domains = {}       # 𝒳 for each variable
-        self._cpts = {}          # Conditional Probability Tables
+        self._cpts = {}          # CPT
         
     def add_vertex(self, v: int, domain: List) -> None:
         """Add a vertex (node) with its possible values"""
@@ -143,8 +145,7 @@ class MarkovRandomField:
                 samples.append(current_config.copy())
                 
         return samples
-        
-    # TODO: track 'speed' of function
+    
     def marginal_probability(self, v: int, value: int, num_samples: int = 10000) -> float:
         """
         Estimate marginal probability Pr(X_v = value) using Gibbs sampling
@@ -222,12 +223,20 @@ class MarkovRandomField:
     def domain(self, v: Any) -> List[int]:
         """Get possible values for vertex v"""
         return self._domains[v].copy()
+    
+    def get_domains(self) -> dict:
+        """Get all domains across the dictionary"""
+        return self._domains
+    
+    def get_cpts(self) -> dict:
+        """Get cpts of MRF"""
+        return self._cpts
 
 
     # Binary 4x3-Neighborhood MRF Example
 # Initialize MRF
 MRF = MarkovRandomField()
-domain = [0, 1]     # Domain will be binary for each random variable
+domain = [0, 1, 2]     # Domain will be binary for each random variable
 height = 3
 width = 4
 
@@ -252,4 +261,10 @@ for i in range(0, height):
 MRF.auto_propagate_cpt()
 
 # Testing marginal probability of P(state(0) == 0)
-print(MRF.marginal_probability(0, 0))
+start = time.perf_counter()
+prob = MRF.marginal_probability(0, 0)
+end = time.perf_counter()
+
+time_elapsed = end - start
+print(f"Gibbs sampling took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob} \n")
