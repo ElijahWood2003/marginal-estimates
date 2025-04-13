@@ -240,6 +240,4 @@ time_elapsed = end - start
 
 print(f"FMDP sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
 print(f"Estimated P(x_0 == 0): {prob} \n")
-
-# TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         
