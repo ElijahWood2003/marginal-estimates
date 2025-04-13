@@ -14,7 +14,7 @@
 This repository contains Python implementations for:
 - **Markov Random Fields (MRF)**: Gibbs sampling, marginal distribution estimation, CPT auto-propagation
 - **LAS (Live-And-Safe Marked Graph)**: MRF to LAS conversion, auto-tokenizer
-- **Factored MDPs (FMDP)**: 
+- **Factored MDPs (FMDP)**: MRF + LAS to FMDP conversion, greedy strategy for marginal distribution estimates
 
 Developed as part of undergraduate research at UNC Chapel Hill, this work focuses on developing computationally efficient methods for estimating marginal distributions in MRFs, with applications in computer vision, spatial statistics, and probabilistic graphical models.
 
