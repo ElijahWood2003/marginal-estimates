@@ -32,6 +32,7 @@ class FMDP:
         self._edges = {}              # Edges dict(action : list of connected actions])
         self._queue = []              # Queue of enabled actions
         self._cpt = {}                # CPT
+        self._domains = {}            # Domains as dict(action : list(values)) for each action
 
         self._values = {}             # Dictionary (action : value)
         self._tokens = {}             # Dictionary (tuple(u, v) : {0, 1})
@@ -41,10 +42,11 @@ class FMDP:
         self.LOC_NEIGHBOR_COUNT = 0
         self.LOC_TOKEN_COUNT = 1
 
-    def add_action(self, action: int) -> None:
+    def add_action(self, action: int, domain = List) -> None:
         """Add an action to the set"""
         self._actions.add(action)
         self._token_count[action] = [0, 0]
+        self._domains[action] = domain
 
     def add_component(self, edge: set, dir: tuple) -> None:
         """Add a component to the map -> set(u, v) : [uval, vval, (u, v)/(v, u)]
@@ -118,18 +120,44 @@ class FMDP:
                     self._queue.append(v)
 
                 # self.add_component({u, v}, (u, v))
+    
+    def set_cpt(self, cpt: dict) -> None:
+        """Set CPT table based on an input CPT"""
+        self._cpt = cpt
             
 
-    def activate_action(self) -> None:
+    def activate_action(self, action: int) -> int:
         """
+        Args:
+            action: the action to activate
+        
+        Returns:
+            The new value of this action for easy sampling
+
         Activate an action:
-            1. Pop the next action of the queue
-            2. Determine new value of action based on CPT
-            3. Set _token_count[action][token_count] = 0
-            4. For each out-neighbor, increase their # of tokens by 1 and check for new enabled action 
+            1. Determine new value of action based on CPT
+            2. Set _token_count[action][token_count] = 0
+            3. For each out-neighbor, increase their # of tokens by 1 and check for new enabled action 
         """
-        action = self._queue.pop(0)
-    
+        # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+        neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+        for a in self._edges[action]:
+            neighbor_set.add((a, self._values[a]))
+
+            self._token_count[a][self.LOC_TOKEN_COUNT] += 1
+            if(self._token_count[a][self.LOC_TOKEN_COUNT] == self._token_count[a][self.LOC_NEIGHBOR_COUNT]):
+                self._queue.append(a)
+        
+        self._token_count[action][self.LOC_TOKEN_COUNT] = 0
+
+        probabilities = self._cpt[action][frozenset(neighbor_set)]
+        value = np.random.choice(probabilities.keys(), p=probabilities.values())
+        self._values[action] = value
+
+        return value
+
+
+        
 
 
 
