@@ -6,7 +6,7 @@
 **Advisor**: P.S. Thiagarajan  
 
 ![MRF Visualization Example](images/mrf_visualization.png)  
-*Example output from the MRF simulator showing node states evolving over time*
+**
 <!-- TODO: add visualization comparing old methods to new method for sampling-->
 
 ## Project Overview
