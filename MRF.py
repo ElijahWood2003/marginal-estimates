@@ -261,10 +261,11 @@ for i in range(0, height):
 MRF.auto_propagate_cpt()
 
 # Testing marginal probability of P(state(0) == 0)
+num_samples = 10000
 start = time.perf_counter()
-prob = MRF.marginal_probability(0, 0)
+prob = MRF.marginal_probability(0, 0, num_samples=num_samples)
 end = time.perf_counter()
-
 time_elapsed = end - start
-print(f"Gibbs sampling took {time_elapsed:.6f} seconds")
+
+print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
 print(f"Estimated P(x_0 == 0): {prob} \n")
