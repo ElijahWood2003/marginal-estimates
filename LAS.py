@@ -73,16 +73,3 @@ class LiveAndSafe:
     def get_tokens(self) -> dict:
         """Get tokens as a dictionary"""
         return self._tokens
-
-    # Example LAS based on 4x3 Neighborhood MRF
-from MRF import MRF
-
-# Initialize LAS
-LAS = LiveAndSafe()
-
-# Use MRF to add vertices / edges
-LAS.set_vertices(MRF.vertices())
-LAS.set_edges(MRF.edges())
-
-# print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
-# print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)

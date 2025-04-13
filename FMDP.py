@@ -3,7 +3,7 @@ import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
-from MRF import MarkovRandomField, MRF
+# from MRF import MarkovRandomField
 import time
 
 class FactoredMarkovDecisionProcess:
@@ -216,28 +216,4 @@ class FactoredMarkovDecisionProcess:
         samples = self.sample(num_samples=num_samples)
         count = sum(1 for sample in samples if sample[a] == value)
         return count / num_samples
-
-
-        # Example FMDP based on 4x3 Neighborhood MRF
-from MRF import MRF
-from LAS import LAS
-
-# FMDP class
-FMDP = FactoredMarkovDecisionProcess()
-FMDP.set_actions(MRF.vertices())
-FMDP.set_edges(LAS.get_edges())
-FMDP.set_components(LAS.get_tokens())
-FMDP.set_domains(MRF.get_domains())
-FMDP.set_cpts(MRF.get_cpts())
-FMDP.set_random_values()
-
-# Testing and tracking time
-num_samples = 10000
-start = time.perf_counter()
-prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
-
-print(f"FMDP sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 0): {prob} \n")
         
