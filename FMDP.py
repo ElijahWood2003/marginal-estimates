@@ -40,8 +40,8 @@ class FactoredMarkovDecisionProcess:
         self._token_count = {}        # Map of actions -> [# of neighbors, # of tokens]  
 
         # Constants
-        self.LOC_NEIGHBOR_COUNT = 0
-        self.LOC_TOKEN_COUNT = 1
+        self.NEIGHBOR_COUNT = 0
+        self.TOKEN_COUNT = 1
 
     def add_action(self, action: int, domain = List) -> None:
         """Add an action to the set"""
@@ -78,7 +78,7 @@ class FactoredMarkovDecisionProcess:
         self._edges[u].append(v)
 
         # Increment the action's number of neighbors by 1
-        self._token_count[u][self.LOC_NEIGHBOR_COUNT] += 1
+        self._token_count[u][self.NEIGHBOR_COUNT] += 1
     
     def set_value(self, u: int, val: int) -> None:
         """
@@ -109,7 +109,7 @@ class FactoredMarkovDecisionProcess:
         """
         self._edges = edges
         for action in self._edges.keys():
-            self._token_count[action][self.LOC_NEIGHBOR_COUNT] = len(self._edges[action])
+            self._token_count[action][self.NEIGHBOR_COUNT] = len(self._edges[action])
     
     def set_components(self, tokens: dict) -> None:
         """
@@ -122,10 +122,10 @@ class FactoredMarkovDecisionProcess:
         for (u, v) in tokens:
             # Check whether a token exists at this location
             if(tokens[(u, v)] == 1):
-                self._token_count[v][self.LOC_TOKEN_COUNT] += 1
+                self._token_count[v][self.TOKEN_COUNT] += 1
 
                 # If # of tokens == # of out-neighbors then we add it to the queue of enabled actions
-                if(self._token_count[v][self.LOC_TOKEN_COUNT] == self._token_count[v][self.LOC_NEIGHBOR_COUNT]):
+                if(self._token_count[v][self.TOKEN_COUNT] == self._token_count[v][self.NEIGHBOR_COUNT]):
                     self._queue.append(v)
 
                 # self.add_component({u, v}, (u, v))
@@ -158,11 +158,11 @@ class FactoredMarkovDecisionProcess:
         for a in self._edges[action]:
             neighbor_set.add((a, int(self._values[a])))
 
-            self._token_count[a][self.LOC_TOKEN_COUNT] += 1
-            if(self._token_count[a][self.LOC_TOKEN_COUNT] == self._token_count[a][self.LOC_NEIGHBOR_COUNT]):
+            self._token_count[a][self.TOKEN_COUNT] += 1
+            if(self._token_count[a][self.TOKEN_COUNT] == self._token_count[a][self.NEIGHBOR_COUNT]):
                 self._queue.append(a)
         
-        self._token_count[action][self.LOC_TOKEN_COUNT] = 0
+        self._token_count[action][self.TOKEN_COUNT] = 0
 
         probabilities = self._cpts[action][frozenset(neighbor_set)]
         domains, probs = zip(*probabilities.items())
