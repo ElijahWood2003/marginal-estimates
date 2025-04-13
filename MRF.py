@@ -3,6 +3,7 @@ import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
+import time
 
 # TODO: Make nodes anything not just integers
 class MarkovRandomField:
@@ -144,8 +145,7 @@ class MarkovRandomField:
                 samples.append(current_config.copy())
                 
         return samples
-        
-    # TODO: track 'speed' of function
+    
     def marginal_probability(self, v: int, value: int, num_samples: int = 10000) -> float:
         """
         Estimate marginal probability Pr(X_v = value) using Gibbs sampling
@@ -236,7 +236,7 @@ class MarkovRandomField:
     # Binary 4x3-Neighborhood MRF Example
 # Initialize MRF
 MRF = MarkovRandomField()
-domain = [0, 1]     # Domain will be binary for each random variable
+domain = [0, 1, 2]     # Domain will be binary for each random variable
 height = 3
 width = 4
 
@@ -261,4 +261,10 @@ for i in range(0, height):
 MRF.auto_propagate_cpt()
 
 # Testing marginal probability of P(state(0) == 0)
-print(MRF.marginal_probability(0, 0))
+start = time.perf_counter()
+prob = MRF.marginal_probability(0, 0)
+end = time.perf_counter()
+
+time_elapsed = end - start
+print(f"Gibbs sampling took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob} \n")

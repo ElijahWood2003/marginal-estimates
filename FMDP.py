@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 from itertools import product
 from MRF import MarkovRandomField, MRF
+import time
 
 class FactoredMarkovDecisionProcess:
     """
@@ -229,8 +230,13 @@ FMDP.set_domains(MRF.get_domains())
 FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
-mp = FMDP.marginal_probability(0, 0)
-print(mp)
+start = time.perf_counter()
+prob = FMDP.marginal_probability(0, 0)
+end = time.perf_counter()
+
+time_elapsed = end - start
+print(f"FMDP sampling estimate took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob}")
 
 # TODO: joint distribution estimates by fixing strategy of FMDP and sampling sufficiently long paths
         
