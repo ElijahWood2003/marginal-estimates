@@ -7,7 +7,7 @@ import time
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
 MRF = M.MarkovRandomField()
-domain = [0, 1, 2]     # Domain will be binary for each random variable
+domain = [0, 1, 2, 3]
 height = 3
 width = 4
 

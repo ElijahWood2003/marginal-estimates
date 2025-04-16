@@ -1,6 +1,5 @@
 ### Factored Markov Decision Process simulator class
 import numpy as np
-from collections import defaultdict
 from typing import Dict, List, Tuple, Set, FrozenSet, Any
 import time
 
