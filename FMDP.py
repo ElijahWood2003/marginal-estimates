@@ -214,3 +214,17 @@ class FactoredMarkovDecisionProcess:
         count = sum(1 for sample in samples if sample[a] == value)
         return count / num_samples
         
+    def joint_probability(self, configuration: Dict[int, int]) -> float:
+        """
+        Compute the joint probability Pr(x) = ∏_i Pr_i(x_i | x_N(i))
+        
+        Args:
+            configuration: Dictionary {vertex: value} representing a global configuration
+            
+        Returns:
+            Joint probability as a float
+        """
+        prob = 1.0
+        
+        
+        return prob
