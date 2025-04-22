@@ -168,7 +168,7 @@ class FactoredMarkovDecisionProcess:
 
         return value
     
-    def sample(self, num_samples: int = 1000, burn_in: int = 100, initial_config: dict[int, int] = None) -> List[Dict[int, int]]:
+    def sample(self, num_samples: int = 1000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> List[Dict[int, int]]:
         """
         Sample the FMDP
         
@@ -213,4 +213,94 @@ class FactoredMarkovDecisionProcess:
         samples = self.sample(num_samples=num_samples)
         count = sum(1 for sample in samples if sample[a] == value)
         return count / num_samples
+
+    def derive_activation(self, initial_action: int) -> List[int]:
+        """
+        Derives the activation order of the actions given the tokens
+
+        Args:
+            initial_action: First action (acyclic orientation 
+                of the tokens should be pointing towards this action)
+
+        Returns:
+            List[int]: The order of actions to take to return to the same initial token state
+        """
+        token_count = self._token_count.copy()
+        activation_order = []
+        stack = [initial_action]
+
+        # Do-while tokens != _tokens
+        while True:
+            action = stack.pop(0)
+            
+            # Append current action
+            activation_order.append(action)
+
+            # Iterate through current action's edges, finding next actions
+            for a in self._edges[action]:
+                token_count[a][self.TOKEN_COUNT] += 1
+                if (token_count[a][self.TOKEN_COUNT] == token_count[a][self.NEIGHBOR_COUNT]):
+                    # Insert at the top of queue iff a == initial action
+                    stack.insert(a==initial_action, a)
+
+            token_count[action][self.TOKEN_COUNT] = 0
+            
+            # Statement to break while loop
+            if (token_count == self._token_count):
+                break
+
+        return activation_order
+    
+    def joint_distribution(self, initial_action: int, num_samples: int = 10000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
+        """
+        Estimate the joint distribution by 
+        sampling values, keeping track of the number of times each global state is observed
+
+        Args:
+            initial_action: The starting activated action
+            num_samples: The number of samples to use for distribution
+            initial_config: Starting configuration
+
+        Returns:
+            joint distribution as a dictionary:
+                values(x1, x2, ... xn) : # of times this global state has been observed
+
+        """
+        if(initial_config):
+            self._values = initial_config
+
+        activation_order = self.derive_activation(initial_action)
+        order_length = len(activation_order)
+
+        samples = {} 
+        current_config = self._values.copy() 
+
+        # Tuple of all values where each index represents the value for its respective action
+        max_key = max(current_config.keys())
+        values = tuple(current_config[i] for i in range(max_key + 1))
         
+        for i in range(burn_in + num_samples):
+            action = activation_order[i % order_length]
+            
+            # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+            neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+            for a in self._edges[action]:
+                neighbor_set.add((a, int(current_config[a])))
+
+            probabilities = self._cpts[action][frozenset(neighbor_set)]
+            domains, probs = zip(*probabilities.items())
+            value = np.random.choice(domains, p=probs)
+
+            current_config[action] = value
+            value_list = list(values)[action] = value
+            values = tuple(value_list)
+
+            # Only add to samples if we are past burn in value
+            if (i >= burn_in):
+                # Key is values
+                if(samples[values]):
+                    samples[values] += 1
+                else: 
+                    samples[values] = 1
+                
+        return samples 
