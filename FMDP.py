@@ -228,10 +228,18 @@ class FactoredMarkovDecisionProcess:
         token_count = self._token_count.copy()
         activation_order = []
         stack = [initial_action]
+        
+        # We will use these two values to track when we have activated every action
+        bin = [1] * len(self._actions)      # Binary array where bin[i] == 0 represents having activated action i
+        sum = len(self._actions)
 
         # Do-while tokens != _tokens
         while True:
             action = stack.pop(0)
+
+            # Subtract from the sum if we haven't seen this action yet 
+            sum -= bin[action]
+            bin[action] = 0
             
             # Append current action
             activation_order.append(action)
@@ -241,12 +249,12 @@ class FactoredMarkovDecisionProcess:
                 token_count[a][self.TOKEN_COUNT] += 1
                 if (token_count[a][self.TOKEN_COUNT] == token_count[a][self.NEIGHBOR_COUNT]):
                     # Insert at the top of queue iff a == initial action
-                    stack.insert(a==initial_action, a)
+                    stack.insert(a!=initial_action, a)
 
             token_count[action][self.TOKEN_COUNT] = 0
             
             # Statement to break while loop
-            if (token_count == self._token_count):
+            if (sum == 0):
                 break
 
         return activation_order
@@ -292,13 +300,15 @@ class FactoredMarkovDecisionProcess:
             value = np.random.choice(domains, p=probs)
 
             current_config[action] = value
-            value_list = list(values)[action] = value
+            value_list = list(values)
+            value_list[action] = value
             values = tuple(value_list)
+
 
             # Only add to samples if we are past burn in value
             if (i >= burn_in):
                 # Key is values
-                if(samples[values]):
+                if values in samples:
                     samples[values] += 1
                 else: 
                     samples[values] = 1
