@@ -197,22 +197,22 @@ class FactoredMarkovDecisionProcess:
                 
         return samples
     
-    def marginal_probability(self, a: int, value: int, num_samples: int = 10000) -> float:
-        """
-        Estimate marginal probability Pr(X_v = value) of FMDP action
+    # def marginal_probability(self, a: int, value: int, num_samples: int = 10000) -> float:
+    #     """
+    #     Estimate marginal probability Pr(X_v = value) of FMDP action
         
-        Args:
-            a: Action of interest
-            value: Value to estimate probability for
-            num_samples: Number of samples to use for estimation
+    #     Args:
+    #         a: Action of interest
+    #         value: Value to estimate probability for
+    #         num_samples: Number of samples to use for estimation
             
-        Returns:
-            Estimated marginal probability
-        """
+    #     Returns:
+    #         Estimated marginal probability
+    #     """
         
-        samples = self.sample(num_samples=num_samples)
-        count = sum(1 for sample in samples if sample[a] == value)
-        return count / num_samples
+    #     samples = self.sample(num_samples=num_samples)
+    #     count = sum(1 for sample in samples if sample[a] == value)
+    #     return count / num_samples
 
     def derive_activation(self, initial_action: int) -> List[int]:
         """
@@ -313,4 +313,26 @@ class FactoredMarkovDecisionProcess:
                 else: 
                     samples[values] = 1
                 
-        return samples 
+        return samples
+    
+    def marginal_probability(self, joint_distribution: Dict[tuple, int], action: int, value: int) -> float:
+        """
+        Returns the marginal probability of the action given the joint distribution
+
+        Args:
+            joint_distribution: The joint distribution as a Dict[tuple, int]
+            action: The action we are marginalizing 
+            value: The value of the action we want to know the probability of
+
+        Returns:
+            float: The probability the action has the given value
+        """
+        num_samples = 0
+        sum = 0
+
+        # iterate through every combination of the joint distribution
+        for key, v in joint_distribution.items():
+            if(key[action] == value): sum += v
+            num_samples += v
+
+        return sum / num_samples
