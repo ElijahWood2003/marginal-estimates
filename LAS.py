@@ -31,15 +31,15 @@ class LiveAndSafe:
         """Set the vertices based on input set"""
         self._vertices = vertices
         
-    # TODO: Implement ptr
     def set_edges(self, edges: set, ptr: int = 0) -> None:
         """
         Set the edges based on the input edges set
         
         Simultaneously sets tokens based on the following:
          - Iterate through all edges (u, v)
-         - If u > v set _tokens[(u, v)] = 1
-         - Otherwise -> _tokens[(u, v)] = 0
+         - If u or v == ptr, point to the ptr
+         - If u and v < ptr, pick direction based on larger of the two
+         - Otherwise, pick direction based on smaller of the two
         This sets tokens based on an acyclic orientation where edges point towards 0
         
         Args:
@@ -59,7 +59,19 @@ class LiveAndSafe:
             self.add_edge(u, v)
             self.add_edge(v, u)
             
-            # Set tokens based on acyclic orientation
+            # If 1 is equal, set and continue
+            if (u == ptr or v == ptr):
+                self._tokens[(u, v)] = int(v == ptr)
+                self._tokens[(v, u)] = int(u == ptr)
+                continue
+        
+            if (u < ptr and v < ptr):
+                # Set tokens based on acyclic orientation
+                self._tokens[(u, v)] = int(u < v)
+                self._tokens[(v, u)] = int(u > v)
+                continue
+            
+            # Otherwise assume we point to the smaller value
             self._tokens[(u, v)] = int(u > v)
             self._tokens[(v, u)] = int(u < v)
 
