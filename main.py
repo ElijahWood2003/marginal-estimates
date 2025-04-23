@@ -4,6 +4,10 @@ import LAS as L
 import FMDP as F
 import time
 
+# TODO: Test acyclic orientation of several values
+# TODO: Run tests on range of samples and compare times
+# TODO: Compare accuracies of different # of samples
+
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
 MRF = M.MarkovRandomField()

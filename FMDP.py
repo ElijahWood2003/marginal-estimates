@@ -267,7 +267,7 @@ class FactoredMarkovDecisionProcess:
         Args:
             initial_action: The starting activated action
             num_samples: The number of samples to use for distribution
-            initial_config: Starting configuration
+            initial_config: Initial global configuration
 
         Returns:
             joint distribution as a dictionary:
