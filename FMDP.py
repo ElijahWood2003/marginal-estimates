@@ -299,11 +299,11 @@ class FactoredMarkovDecisionProcess:
             domains, probs = zip(*probabilities.items())
             value = np.random.choice(domains, p=probs)
 
+            # Convert values to list, mutate, then convert back to tuple
             current_config[action] = value
             value_list = list(values)
             value_list[action] = value
             values = tuple(value_list)
-
 
             # Only add to samples if we are past burn in value
             if (i >= burn_in):
@@ -332,7 +332,7 @@ class FactoredMarkovDecisionProcess:
 
         # iterate through every combination of the joint distribution
         for key, v in joint_distribution.items():
-            if(key[action] == value): sum += v
+            sum += v * (key[action] == value)   # Add to the sum iff the value is what we are looking for
             num_samples += v
 
         return sum / num_samples
