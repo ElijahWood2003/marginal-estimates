@@ -8,6 +8,9 @@ import time
 # TODO: Run tests on range of samples and compare times
 # TODO: Compare accuracies of different # of samples
 # TODO: Fix the activation order (we want the fastest way to reactivate the first node again)
+# TODO: Marginal probability shouldn't be joint probability, it should be the greedy sampling method
+    # where we only track the value of xi and the current global state
+# TODO: Create simple graph showing differences in speeds / accuracies
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
