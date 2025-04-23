@@ -68,8 +68,9 @@ num_samples = 100000
 start = time.perf_counter()
 joint_dist = FMDP.joint_distribution(0, num_samples=num_samples)
 end = time.perf_counter()
-prob = FMDP.marginal_probability(joint_dist, 0, 0)
 time_elapsed = end - start
+
+prob = FMDP.marginal_probability(joint_dist, 0, 0)
 
 print(f"Joint distribution of ({num_samples} samples) took {time_elapsed:.6f} seconds")
 print(f"Estimated P(x_0 == 0): {prob} \n")
