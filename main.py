@@ -7,6 +7,7 @@ import time
 # TODO: Test acyclic orientation of several values
 # TODO: Run tests on range of samples and compare times
 # TODO: Compare accuracies of different # of samples
+# TODO: Fix the activation order (we want the fastest way to reactivate the first node again)
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
@@ -68,13 +69,13 @@ FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
 # Testing joint distribution and tracking time
-num_samples = 100000
+num_samples = 1000000
 start = time.perf_counter()
 joint_dist = FMDP.joint_distribution(0, num_samples=num_samples)
+prob = FMDP.marginal_probability(joint_dist, 0, 0)
 end = time.perf_counter()
 time_elapsed = end - start
 
-prob = FMDP.marginal_probability(joint_dist, 0, 0)
 
 print(f"Joint distribution of ({num_samples} samples) took {time_elapsed:.6f} seconds")
 print(f"Estimated P(x_0 == 0): {prob} \n")
