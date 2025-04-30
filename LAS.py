@@ -59,7 +59,7 @@ class LiveAndSafe:
             self.add_edge(u, v)
             self.add_edge(v, u)
             
-            # If 1 is equal, set and continue
+            # If u or v is equal to the pointer, then point towards it
             if (u == ptr or v == ptr):
                 self._tokens[(u, v)] = int(v == ptr)
                 self._tokens[(v, u)] = int(u == ptr)

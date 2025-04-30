@@ -4,7 +4,6 @@ import LAS as L
 import FMDP as F
 import time
 
-# TODO: Test acyclic orientation of several values
 # TODO: Run tests on range of samples and compare times
 # TODO: Compare accuracies of different # of samples
 # TODO: Fix the activation order (we want the fastest way to reactivate the first node again)
@@ -57,10 +56,11 @@ acyclic_pointer = 0
 # Use MRF to add vertices / edges
 LAS.set_vertices(MRF.vertices())
 LAS.set_edges(MRF.edges(), ptr=acyclic_pointer)
+tokens = LAS.get_tokens()
 
-# print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
-# print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
-
+print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
+print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
+print("Hi")
 
     # Initialize FMDP
 FMDP = F.FactoredMarkovDecisionProcess()

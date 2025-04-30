@@ -216,7 +216,10 @@ class FactoredMarkovDecisionProcess:
 
     def derive_activation(self, initial_action: int) -> List[int]:
         """
-        Derives the activation order of the actions given the tokens
+        Derives the activation sequence to maximize the activations of the initial action
+        while minimizing the number of total activations
+        
+        On each activation, note which nodes are activated, these must be flipped in the next iteration
 
         Args:
             initial_action: First action (acyclic orientation 
