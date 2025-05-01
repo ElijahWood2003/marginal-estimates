@@ -4,6 +4,8 @@ import LAS as L
 import FMDP as F
 import time
 
+# TODO: Create test.py file with test functions
+# TODO: Output test data to csv file
 # TODO: Run tests on range of samples and compare times
 # TODO: Compare accuracies of different # of samples
 # TODO: Create simple graph showing differences in speeds / accuracies
