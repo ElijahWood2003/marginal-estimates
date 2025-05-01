@@ -229,8 +229,8 @@ class FactoredMarkovDecisionProcess:
         Returns:
             List[int]: The order of actions to take to return to the same initial token state
         """
-        depth = {}
-        depth_list = []
+        depth = {}          # Dictionary to track depths for each action
+        depth_list = []     # Depth list to use for activation sequence
         
         depth[initial_action] = 0
         depth_list.append([initial_action])
@@ -253,7 +253,9 @@ class FactoredMarkovDecisionProcess:
                     else:
                         depth_list[depth[action]].append(action)
         
+        # Activation sequence (list of actions to return)
         activation_sequence = []
+
         # Now we have the depth list, iterate through to derive activation sequence
         for i in range(len(depth_list)):
             # Iterate backwards from i
@@ -273,6 +275,7 @@ class FactoredMarkovDecisionProcess:
         Args:
             initial_action: The starting activated action
             num_samples: The number of samples to use for distribution
+            burn_in: The number of samples to burn before sampling
             initial_config: Initial global configuration
 
         Returns:
@@ -321,7 +324,7 @@ class FactoredMarkovDecisionProcess:
                 
         return samples
     
-    def marginal_probability(self, joint_distribution: Dict[tuple, int], action: int, value: int) -> float:
+    def joint_distribution_to_marginal_probability(self, joint_distribution: Dict[tuple, int], action: int, value: int) -> float:
         """
         Returns the marginal probability of the action given the joint distribution
 
@@ -336,9 +339,52 @@ class FactoredMarkovDecisionProcess:
         num_samples = 0
         sum = 0
 
-        # iterate through every combination of the joint distribution
+        # Iterate through every combination of the joint distribution
         for key, v in joint_distribution.items():
             sum += v * (key[action] == value)   # Add to the sum iff the value is what we are looking for
             num_samples += v
 
         return sum / num_samples
+
+    def marginal_probability(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100) -> float:
+        """
+        Returns an estimate of the marginal probability P(action == value) by sampling
+        
+        Args:
+            initial_action: The action we are marginalizing
+            target_value: The value of the action we want to know the probability of
+            num_samples: The number of samples to take
+            burn_in: The number of samples to ignore before tracking their values
+        
+        Returns:
+            float: Estimated P(action == value)
+        """
+        activation_order = self.derive_activation(initial_action)
+        order_length = len(activation_order)
+
+        current_config = self._values.copy() 
+
+        # Tuple of all values where each index represents the value for its respective action
+        count = 0
+        
+        for i in range(burn_in + num_samples):
+            action = activation_order[i % order_length]
+            
+            # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+            neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+            for a in self._edges[action]:
+                neighbor_set.add((a, int(current_config[a])))
+
+            probabilities = self._cpts[action][frozenset(neighbor_set)]
+            domains, probs = zip(*probabilities.items())
+            value = np.random.choice(domains, p=probs)
+
+            # Convert values to list, mutate, then convert back to tuple
+            current_config[action] = value
+            
+            # Only add to samples if we are past burn in value
+            if (i >= burn_in):
+                # Add to count iff value of action == value
+                count += (current_config[initial_action] == target_value)
+            
+        return count / num_samples

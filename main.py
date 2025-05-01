@@ -6,9 +6,6 @@ import time
 
 # TODO: Run tests on range of samples and compare times
 # TODO: Compare accuracies of different # of samples
-# TODO: Fix the activation order (we want the fastest way to reactivate the first node again)
-# TODO: Marginal probability shouldn't be joint probability, it should be the greedy sampling method
-    # where we only track the value of xi and the current global state
 # TODO: Create simple graph showing differences in speeds / accuracies
 
         # Binary 4x3-Neighborhood MRF Example
@@ -39,14 +36,14 @@ for i in range(0, height):
 MRF.auto_propagate_cpt()
 
 # Testing marginal probability of P(state(0) == 0)
-# num_samples = 100000
-# start = time.perf_counter()
-# prob = MRF.marginal_probability(0, 0, num_samples=num_samples)
-# end = time.perf_counter()
-# time_elapsed = end - start
+num_samples = 100000
+start = time.perf_counter()
+prob = MRF.marginal_probability(0, 0, num_samples=num_samples)
+end = time.perf_counter()
+time_elapsed = end - start
 
-# print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-# print(f"Estimated P(x_0 == 0): {prob} \n")
+print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob} \n")
 
 
     # Initialize LAS
@@ -71,10 +68,11 @@ FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
 # Testing joint distribution and tracking time
-num_samples = 1000000
+num_samples = 100000
 start = time.perf_counter()
-joint_dist = FMDP.joint_distribution(0, num_samples=num_samples)
-prob = FMDP.marginal_probability(joint_dist, 0, 0)
+prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
+# joint_dist = FMDP.joint_distribution(0, num_samples=num_samples)
+# prob = FMDP.joint_distribution_to_marginal_probability(joint_dist, 0, 0)
 end = time.perf_counter()
 time_elapsed = end - start
 
