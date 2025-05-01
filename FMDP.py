@@ -264,40 +264,6 @@ class FactoredMarkovDecisionProcess:
         
         return activation_sequence
                 
-        
-        # token_count = self._token_count.copy()
-        # activation_order = []
-        # stack = [initial_action]
-        
-        # # We will use these two values to track when we have activated every action
-        # bin = [1] * len(self._actions)      # Binary array where bin[i] == 0 represents having activated action i
-        # sum = len(self._actions)
-
-        # # Do-while tokens != _tokens
-        # while True:
-        #     action = stack.pop(0)
-
-        #     # Subtract from the sum if we haven't seen this action yet 
-        #     sum -= bin[action]
-        #     bin[action] = 0
-            
-        #     # Append current action
-        #     activation_order.append(action)
-
-        #     # Iterate through current action's edges, finding next actions
-        #     for a in self._edges[action]:
-        #         token_count[a][self.TOKEN_COUNT] += 1
-        #         if (token_count[a][self.TOKEN_COUNT] == token_count[a][self.NEIGHBOR_COUNT]):
-        #             # Insert at the top of queue iff a == initial action
-        #             stack.insert(a!=initial_action, a)
-
-        #     token_count[action][self.TOKEN_COUNT] = 0
-            
-        #     # Statement to break while loop
-        #     if (sum == 0):
-        #         break
-
-        return activation_order
     
     def joint_distribution(self, initial_action: int, num_samples: int = 10000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
         """
