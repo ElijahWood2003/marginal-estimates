@@ -58,9 +58,8 @@ LAS.set_vertices(MRF.vertices())
 LAS.set_edges(MRF.edges(), ptr=acyclic_pointer)
 tokens = LAS.get_tokens()
 
-print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
-print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
-print("Hi")
+# print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
+# print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
 
     # Initialize FMDP
 FMDP = F.FactoredMarkovDecisionProcess()

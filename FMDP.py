@@ -216,10 +216,11 @@ class FactoredMarkovDecisionProcess:
 
     def derive_activation(self, initial_action: int) -> List[int]:
         """
+        Run BFS to derive depths of all actions
+        Then output as a list the desired sequence
+        
         Derives the activation sequence to maximize the activations of the initial action
         while minimizing the number of total activations
-        
-        On each activation, note which nodes are activated, these must be flipped in the next iteration
 
         Args:
             initial_action: First action (acyclic orientation 
@@ -228,37 +229,73 @@ class FactoredMarkovDecisionProcess:
         Returns:
             List[int]: The order of actions to take to return to the same initial token state
         """
-        token_count = self._token_count.copy()
-        activation_order = []
-        stack = [initial_action]
+        depth = {}
+        depth_list = []
         
-        # We will use these two values to track when we have activated every action
-        bin = [1] * len(self._actions)      # Binary array where bin[i] == 0 represents having activated action i
-        sum = len(self._actions)
-
-        # Do-while tokens != _tokens
-        while True:
-            action = stack.pop(0)
-
-            # Subtract from the sum if we haven't seen this action yet 
-            sum -= bin[action]
-            bin[action] = 0
+        depth[initial_action] = 0
+        depth_list.append([initial_action])
+        
+        queue = []
+        queue.append(initial_action)
+        
+        while(queue):
+            s = queue.pop(0)
             
-            # Append current action
-            activation_order.append(action)
+            # Iterate through all edges of queued action
+            for action in self._edges[s]:
+                if action not in depth:
+                    queue.append(action)
+                    depth[action] = depth[s] + 1
 
-            # Iterate through current action's edges, finding next actions
-            for a in self._edges[action]:
-                token_count[a][self.TOKEN_COUNT] += 1
-                if (token_count[a][self.TOKEN_COUNT] == token_count[a][self.NEIGHBOR_COUNT]):
-                    # Insert at the top of queue iff a == initial action
-                    stack.insert(a!=initial_action, a)
+                    # Check if the index already exists
+                    if(depth[action] >= len(depth_list)):
+                        depth_list.append([action])
+                    else:
+                        depth_list[depth[action]].append(action)
+        
+        activation_sequence = []
+        # Now we have the depth list, iterate through to derive activation sequence
+        for i in range(len(depth_list)):
+            # Iterate backwards from i
+            for k in range(i, -1, -1):
+                # For each depth we need to activate each action
+                for action in depth_list[k]:
+                    activation_sequence.append(action)
+        
+        return activation_sequence
+                
+        
+        # token_count = self._token_count.copy()
+        # activation_order = []
+        # stack = [initial_action]
+        
+        # # We will use these two values to track when we have activated every action
+        # bin = [1] * len(self._actions)      # Binary array where bin[i] == 0 represents having activated action i
+        # sum = len(self._actions)
 
-            token_count[action][self.TOKEN_COUNT] = 0
+        # # Do-while tokens != _tokens
+        # while True:
+        #     action = stack.pop(0)
+
+        #     # Subtract from the sum if we haven't seen this action yet 
+        #     sum -= bin[action]
+        #     bin[action] = 0
             
-            # Statement to break while loop
-            if (sum == 0):
-                break
+        #     # Append current action
+        #     activation_order.append(action)
+
+        #     # Iterate through current action's edges, finding next actions
+        #     for a in self._edges[action]:
+        #         token_count[a][self.TOKEN_COUNT] += 1
+        #         if (token_count[a][self.TOKEN_COUNT] == token_count[a][self.NEIGHBOR_COUNT]):
+        #             # Insert at the top of queue iff a == initial action
+        #             stack.insert(a!=initial_action, a)
+
+        #     token_count[action][self.TOKEN_COUNT] = 0
+            
+        #     # Statement to break while loop
+        #     if (sum == 0):
+        #         break
 
         return activation_order
     
