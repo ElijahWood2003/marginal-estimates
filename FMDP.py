@@ -137,6 +137,7 @@ class FactoredMarkovDecisionProcess:
             for action, domain in self._domains.items():
                 self._values[action] = np.random.choice(domain)
 
+    # NOTE: Arbitrary method (less efficient than methods below)
     def activate_action(self, action: int) -> int:
         """
         Args:
@@ -168,6 +169,7 @@ class FactoredMarkovDecisionProcess:
 
         return value
     
+    # NOTE: Arbitrary method
     def sample(self, num_samples: int = 1000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> List[Dict[int, int]]:
         """
         Sample the FMDP
@@ -196,23 +198,6 @@ class FactoredMarkovDecisionProcess:
                 samples.append(current_config.copy())
                 
         return samples
-    
-    # def marginal_probability(self, a: int, value: int, num_samples: int = 10000) -> float:
-    #     """
-    #     Estimate marginal probability Pr(X_v = value) of FMDP action
-        
-    #     Args:
-    #         a: Action of interest
-    #         value: Value to estimate probability for
-    #         num_samples: Number of samples to use for estimation
-            
-    #     Returns:
-    #         Estimated marginal probability
-    #     """
-        
-    #     samples = self.sample(num_samples=num_samples)
-    #     count = sum(1 for sample in samples if sample[a] == value)
-    #     return count / num_samples
 
     def derive_activation(self, initial_action: int) -> List[int]:
         """
@@ -265,12 +250,12 @@ class FactoredMarkovDecisionProcess:
                     activation_sequence.append(action)
         
         return activation_sequence
-                
     
-    def joint_distribution(self, initial_action: int, num_samples: int = 10000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
+    def joint_distribution(self, num_samples: int = 10000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
         """
-        Estimate the joint distribution by 
-        sampling values, keeping track of the number of times each global state is observed
+        Estimate the joint distribution by using gibbs sampling,
+        keeping track of the number of times each global state is observed
+        Picks an arbitrary fixed activation sequence
 
         Args:
             initial_action: The starting activated action
@@ -286,7 +271,7 @@ class FactoredMarkovDecisionProcess:
         if(initial_config):
             self._values = initial_config
 
-        activation_order = self.derive_activation(initial_action)
+        activation_order = np.random.permutation(list(self._actions))
         order_length = len(activation_order)
 
         samples = {} 
@@ -345,6 +330,24 @@ class FactoredMarkovDecisionProcess:
             num_samples += v
 
         return sum / num_samples
+    
+    def gibbs_sampling(self, action: int, value: int, num_samples: int = 10000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> float:
+        """
+        Returns the marginal distribution
+
+        Args:
+            action (int): The action we are marginalizing 
+            value (int): The action we are marginalizing 
+            num_samples: The number of samples to use for distribution
+            burn_in: The number of samples to burn before sampling
+            initial_config: Initial global configuration
+
+        Returns:
+            float: The estimated probability that the action has the given value
+        """
+        joint_distribution = self.joint_distribution(num_samples=num_samples, burn_in=burn_in, initial_config=initial_config)
+        
+        return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value)
 
     def marginal_probability(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100) -> float:
         """

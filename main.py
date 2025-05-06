@@ -47,7 +47,6 @@ time_elapsed = end - start
 print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
 print(f"Estimated P(x_0 == 0): {prob} \n")
 
-
     # Initialize LAS
 LAS = L.LiveAndSafe()
 acyclic_pointer = 0
