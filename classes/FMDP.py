@@ -351,7 +351,7 @@ class FactoredMarkovDecisionProcess:
 
     def marginal_probability(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100) -> float:
         """
-        Returns an estimate of the marginal probability P(action == value) by sampling
+        Returns an estimate of the marginal probability P(action == value) with token sampling
         
         Args:
             initial_action: The action we are marginalizing
