@@ -251,7 +251,7 @@ class FactoredMarkovDecisionProcess:
         
         return activation_sequence
     
-    def joint_distribution(self, num_samples: int = 10000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
+    def joint_distribution(self, num_samples: int = 10000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
         """
         Estimate the joint distribution by using gibbs sampling,
         keeping track of the number of times each global state is observed
@@ -261,6 +261,7 @@ class FactoredMarkovDecisionProcess:
             initial_action: The starting activated action
             num_samples: The number of samples to use for distribution
             burn_in: The number of samples to burn before sampling
+            time_limit: If positive, limits the sampling based on the time rather than # of samples
             initial_config: Initial global configuration
 
         Returns:
@@ -331,7 +332,7 @@ class FactoredMarkovDecisionProcess:
 
         return sum / num_samples
     
-    def gibbs_sampling(self, action: int, value: int, num_samples: int = 10000, burn_in: int = 100, initial_config: Dict[int, int] = None) -> float:
+    def gibbs_sampling(self, action: int, value: int, num_samples: int = 10000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> float:
         """
         Returns the marginal distribution
 
@@ -340,6 +341,7 @@ class FactoredMarkovDecisionProcess:
             value (int): The action we are marginalizing 
             num_samples: The number of samples to use for distribution
             burn_in: The number of samples to burn before sampling
+            time_limit: If positive, limits the sampling based on time rather than the number of samples
             initial_config: Initial global configuration
 
         Returns:
@@ -349,7 +351,7 @@ class FactoredMarkovDecisionProcess:
         
         return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value)
 
-    def marginal_probability(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100) -> float:
+    def token_sampling(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100) -> float:
         """
         Returns an estimate of the marginal probability P(action == value) with token sampling
         

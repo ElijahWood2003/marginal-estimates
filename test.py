@@ -51,7 +51,7 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
 
                 # Testing token sampling marginal probability that P(target_action == target_value)
                 start = time.perf_counter()
-                token_prob = FMDP.marginal_probability(initial_action=0, target_value=0, num_samples=num_samples)
+                token_prob = FMDP.token_sampling(initial_action=0, target_value=0, num_samples=num_samples)
                 end = time.perf_counter()
                 token_time_elapsed = end - start
 
@@ -134,7 +134,7 @@ print(f"Estimated P(x_5 == 1): {prob} \n")
 # Testing marginal distribution and tracking time
 num_samples = 100000
 start = time.perf_counter()
-prob = FMDP.marginal_probability(initial_action=5, target_value=1, num_samples=num_samples)
+prob = FMDP.token_sampling(initial_action=5, target_value=1, num_samples=num_samples)
 end = time.perf_counter()
 time_elapsed = end - start
 
@@ -156,7 +156,7 @@ print(f"Estimated P(x_0 == 1): {prob} \n")
 # Testing marginal distribution and tracking time
 num_samples = 100000
 start = time.perf_counter()
-prob = FMDP.marginal_probability(initial_action=0, target_value=1, num_samples=num_samples)
+prob = FMDP.token_sampling(initial_action=0, target_value=1, num_samples=num_samples)
 end = time.perf_counter()
 time_elapsed = end - start
 
@@ -176,7 +176,7 @@ print(f"Estimated P(x_0 == 0): {prob} \n")
 # Testing marginal distribution and tracking time
 num_samples = 1000000
 start = time.perf_counter()
-prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
+prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
 end = time.perf_counter()
 time_elapsed = end - start
 
@@ -187,7 +187,7 @@ print(f"Estimated P(x_0 == 0): {prob} \n")
 # Testing joint distribution and tracking time
 # num_samples = 100000
 # start = time.perf_counter()
-# prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
+# prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
 # end = time.perf_counter()
 # time_elapsed = end - start
 

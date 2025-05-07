@@ -40,7 +40,7 @@ MRF.auto_propagate_cpt()
 # Testing marginal probability of P(state(0) == 0)
 num_samples = 100000
 start = time.perf_counter()
-prob = MRF.marginal_probability(0, 0, num_samples=num_samples)
+prob = MRF.token_sampling(0, 0, num_samples=num_samples)
 end = time.perf_counter()
 time_elapsed = end - start
 
@@ -71,9 +71,9 @@ FMDP.set_random_values()
 # Testing joint distribution and tracking time
 num_samples = 100000
 start = time.perf_counter()
-prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
+prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
 # joint_dist = FMDP.joint_distribution(0, num_samples=num_samples)
-# prob = FMDP.joint_distribution_to_marginal_probability(joint_dist, 0, 0)
+# prob = FMDP.joint_distribution_to_token_sampling(joint_dist, 0, 0)
 end = time.perf_counter()
 time_elapsed = end - start
 
@@ -84,7 +84,7 @@ print(f"Estimated P(x_0 == 0): {prob} \n")
 # Testing marginal distribution and tracking time
 # num_samples = 100000
 # start = time.perf_counter()
-# prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
+# prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
 # end = time.perf_counter()
 # time_elapsed = end - start
 
