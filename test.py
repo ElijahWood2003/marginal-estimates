@@ -1,14 +1,10 @@
-### Main file to run tests on examples
+### Run tests on examples and output results to a csv file for analysis
 import classes.MRF as M
 import classes.LAS as L
 import classes.FMDP as F
 import time
+import pandas as pd
 
-# TODO: Create test.py file with test functions
-# TODO: Output test data to csv file
-# TODO: Run tests on range of samples and compare times
-# TODO: Compare accuracies of different # of samples
-# TODO: Create simple graph showing differences in speeds / accuracies
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
@@ -37,16 +33,6 @@ for i in range(0, height):
 # Auto propagate the CPTs with random probabilities
 MRF.auto_propagate_cpt()
 
-# Testing marginal probability of P(state(0) == 0)
-num_samples = 100000
-start = time.perf_counter()
-prob = MRF.marginal_probability(0, 0, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
-
-print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 0): {prob} \n")
-
     # Initialize LAS
 LAS = L.LiveAndSafe()
 acyclic_pointer = 0
@@ -55,9 +41,6 @@ acyclic_pointer = 0
 LAS.set_vertices(MRF.vertices())
 LAS.set_edges(MRF.edges(), ptr=acyclic_pointer)
 tokens = LAS.get_tokens()
-
-# print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
-# print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
 
     # Initialize FMDP
 FMDP = F.FactoredMarkovDecisionProcess()
@@ -68,25 +51,56 @@ FMDP.set_domains(MRF.get_domains())
 FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
-# Testing joint distribution and tracking time
+# Estimating gibbs sampling marginal probability that P(x_0 == 0)
 num_samples = 100000
 start = time.perf_counter()
-prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
-# joint_dist = FMDP.joint_distribution(0, num_samples=num_samples)
-# prob = FMDP.joint_distribution_to_marginal_probability(joint_dist, 0, 0)
+prob = FMDP.gibbs_sampling(0, 0, num_samples=num_samples)
 end = time.perf_counter()
 time_elapsed = end - start
 
-
-print(f"Joint distribution of ({num_samples} samples) took {time_elapsed:.6f} seconds")
+print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
 print(f"Estimated P(x_0 == 0): {prob} \n")
 
 # Testing marginal distribution and tracking time
+num_samples = 100000
+start = time.perf_counter()
+prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
+end = time.perf_counter()
+time_elapsed = end - start
+
+print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob} \n")
+
+print("\n")
+
+# Estimating gibbs sampling marginal probability that P(x_0 == 0)
+num_samples = 1000000
+start = time.perf_counter()
+prob = FMDP.gibbs_sampling(0, 0, num_samples=num_samples)
+end = time.perf_counter()
+time_elapsed = end - start
+
+print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob} \n")
+
+# Testing marginal distribution and tracking time
+num_samples = 1000000
+start = time.perf_counter()
+prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
+end = time.perf_counter()
+time_elapsed = end - start
+
+print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+print(f"Estimated P(x_0 == 0): {prob} \n")
+
+
+# Testing joint distribution and tracking time
 # num_samples = 100000
 # start = time.perf_counter()
 # prob = FMDP.marginal_probability(0, 0, num_samples=num_samples)
 # end = time.perf_counter()
 # time_elapsed = end - start
 
-# print(f"FMDP sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+
+# print(f"Joint distribution of ({num_samples} samples) took {time_elapsed:.6f} seconds")
 # print(f"Estimated P(x_0 == 0): {prob} \n")
