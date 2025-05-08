@@ -4,6 +4,9 @@ import classes.LAS as L
 import classes.FMDP as F
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
 
 def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
@@ -83,6 +86,79 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
 
     acc_df.to_csv("data/accuracy_test_data.csv", index=False, header=True)
     speed_df.to_csv("data/speed_test_data.csv", index=False, header=True)
+
+def graph_data():
+    """
+    Graph the data from the csv files
+    
+    
+
+    """
+    # Get DF
+    acc_df = pd.read_csv('data/accuracy_test_data.csv')
+    speed_df = pd.read_csv('data/speed_test_data.csv')
+
+    # Calculate the "true" distribution for each cycle (average of 30s estimates)
+    true_dist = speed_df[speed_df['set_time'] == 30].groupby(['cycle', 'sample_type'])['estimated_distribution'].mean()
+    true_dist = true_dist.reset_index().rename(columns={'estimated_distribution': 'true_distribution'})
+
+    # Merge this ground truth back with the original data
+    merged = pd.merge(speed_df, true_dist, on=['cycle', 'sample_type'])
+
+    # Calculate absolute error from ground truth
+    merged['abs_error'] = np.abs(merged['estimated_distribution'] - merged['true_distribution'])
+
+    # Filter out the 30s estimates (since they're our ground truth)
+    comparison_data = merged[merged['set_time'].isin([1, 10])]
+
+    # Create the visualization
+    plt.figure(figsize=(12, 6))
+    sns.set_style("whitegrid")
+
+    # Create a boxplot showing error distribution by time and sample type
+    ax = sns.boxplot(
+        x='set_time', 
+        y='abs_error', 
+        hue='sample_type', 
+        data=comparison_data,
+        palette={'Gibbs': 'skyblue', 'Token': 'salmon'},
+        width=0.6
+    )
+
+    # Add mean markers
+    means = comparison_data.groupby(['set_time', 'sample_type'])['abs_error'].mean().reset_index()
+    sns.stripplot(
+        x='set_time', 
+        y='abs_error', 
+        hue='sample_type', 
+        data=means,
+        palette={'Gibbs': 'blue', 'Token': 'red'},
+        size=10, 
+        marker='D',
+        jitter=False,
+        ax=ax,
+        legend=False
+    )
+
+    # Customize the plot
+    plt.title('Accuracy of Short vs Medium Estimates Compared to 30s Ground Truth', pad=20)
+    plt.xlabel('Estimation Time (seconds)')
+    plt.ylabel('Absolute Error from Ground Truth')
+    plt.legend(title='Sampling Method', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    # Annotate the means
+    # for i, row in means.iterrows():
+    #     ax.text(
+    #         row['set_time'] - (0.15 if row['sample_type'] == 'Gibbs' else 0.15),
+    #         row['abs_error'] + 0.001,
+    #         f"μ={row['abs_error']:.4f}",
+    #         color='blue' if row['sample_type'] == 'Gibbs' else 'red',
+    #         fontsize=9
+    #     )
+
+    plt.tight_layout()
+    plt.show()
+
 
 #         # Binary 4x3-Neighborhood MRF Example
 #     # Initialize MRF
