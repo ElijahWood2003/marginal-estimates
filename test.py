@@ -91,8 +91,6 @@ def graph_data():
     """
     Graph the data from the csv files
     
-    
-
     """
     # Get DF
     acc_df = pd.read_csv('data/accuracy_test_data.csv')
