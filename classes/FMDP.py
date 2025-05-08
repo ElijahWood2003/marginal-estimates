@@ -261,7 +261,7 @@ class FactoredMarkovDecisionProcess:
             initial_action: The starting activated action
             num_samples: The number of samples to use for distribution
             burn_in: The number of samples to burn before sampling
-            time_limit: If positive, limits the sampling based on the time rather than # of samples
+            time_limit: If positive, limits the sampling based on the time rather than # of samples (in seconds)
             initial_config: Initial global configuration
 
         Returns:
@@ -281,6 +281,46 @@ class FactoredMarkovDecisionProcess:
         # Tuple of all values where each index represents the value for its respective action
         max_key = max(current_config.keys())
         values = tuple(current_config[i] for i in range(max_key + 1))
+        
+        # If time limit is positive then limit based on time not sample count
+        if(time_limit > -1):
+            start = time.perf_counter()
+            current = start
+            sample_count = 0
+            
+            while(current - start < time_limit):
+                action = activation_order[sample_count % order_length]
+                
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
+
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
+
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                value_list = list(values)
+                value_list[action] = value
+                values = tuple(value_list)
+
+                # Only add to samples if we are past burn in value
+                if (sample_count >= burn_in):
+                    # Key is values
+                    if values in samples:
+                        samples[values] += 1
+                    else: 
+                        samples[values] = 1
+                
+                sample_count += 1
+                        
+                # Only update current every 10 samples to save time
+                if(sample_count % 10 == 0):
+                    current = time.perf_counter()
+                
+            return samples
         
         for i in range(burn_in + num_samples):
             action = activation_order[i % order_length]
@@ -341,17 +381,17 @@ class FactoredMarkovDecisionProcess:
             value (int): The action we are marginalizing 
             num_samples: The number of samples to use for distribution
             burn_in: The number of samples to burn before sampling
-            time_limit: If positive, limits the sampling based on time rather than the number of samples
+            time_limit: If positive, limits the sampling based on time rather than the number of samples (in seconds)
             initial_config: Initial global configuration
 
         Returns:
             float: The estimated probability that the action has the given value
         """
-        joint_distribution = self.joint_distribution(num_samples=num_samples, burn_in=burn_in, initial_config=initial_config)
+        joint_distribution = self.joint_distribution(num_samples=num_samples, burn_in=burn_in, time_limit=time_limit, initial_config=initial_config)
         
         return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value)
 
-    def token_sampling(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100) -> float:
+    def token_sampling(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100, time_limit: int = -1) -> float:
         """
         Returns an estimate of the marginal probability P(action == value) with token sampling
         
@@ -360,6 +400,7 @@ class FactoredMarkovDecisionProcess:
             target_value: The value of the action we want to know the probability of
             num_samples: The number of samples to take
             burn_in: The number of samples to ignore before tracking their values
+            time_limit: If positive, limits the sampling based on time rather than the number of samples (in seconds)
         
         Returns:
             float: Estimated P(action == value)
@@ -372,6 +413,42 @@ class FactoredMarkovDecisionProcess:
         # Tuple of all values where each index represents the value for its respective action
         count = 0
         
+        # If time_limit > -1 then we limit based on time, not # of samples
+        if(time_limit > -1):
+            start = time.perf_counter()
+            current = start
+            sample_count = 0
+            
+            # Perform same sampling as below but limited based on time
+            while(current - start < time_limit):
+                action = activation_order[sample_count % order_length]
+            
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
+
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
+
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                
+                # Only add to samples if we are past burn in value
+                if (sample_count >= burn_in):
+                    # Add to count iff value of action == value
+                    count += (current_config[initial_action] == target_value)
+                
+                sample_count += 1
+                
+                # Only update current every 10 samples to save time
+                if(sample_count % 10 == 0):
+                    current = time.perf_counter()
+            
+            return count / sample_count
+            
+        # Limit based on number of samples
         for i in range(burn_in + num_samples):
             action = activation_order[i % order_length]
             

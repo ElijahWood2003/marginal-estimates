@@ -3,6 +3,7 @@ import classes.MRF as M
 import classes.LAS as L
 import classes.FMDP as F
 import time
+import test
 
 # TODO: Create test.py file with test functions
 # TODO: Output test data to csv file
@@ -37,27 +38,14 @@ for i in range(0, height):
 # Auto propagate the CPTs with random probabilities
 MRF.auto_propagate_cpt()
 
-# Testing marginal probability of P(state(0) == 0)
-num_samples = 100000
-start = time.perf_counter()
-prob = MRF.token_sampling(0, 0, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
-
-print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 0): {prob} \n")
-
     # Initialize LAS
 LAS = L.LiveAndSafe()
-acyclic_pointer = 0
+target_action = 0
 
 # Use MRF to add vertices / edges
 LAS.set_vertices(MRF.vertices())
-LAS.set_edges(MRF.edges(), ptr=acyclic_pointer)
+LAS.set_edges(MRF.edges(), ptr=target_action)
 tokens = LAS.get_tokens()
-
-# print(LAS._tokens[(0, 4)])      # should be 0 since !(0 > 4)
-# print(LAS._tokens[(4, 0)])      # should be 1 since  (4 > 0)
 
     # Initialize FMDP
 FMDP = F.FactoredMarkovDecisionProcess()
@@ -68,25 +56,11 @@ FMDP.set_domains(MRF.get_domains())
 FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
-# Testing joint distribution and tracking time
-num_samples = 100000
-start = time.perf_counter()
-prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
-# joint_dist = FMDP.joint_distribution(0, num_samples=num_samples)
-# prob = FMDP.joint_distribution_to_token_sampling(joint_dist, 0, 0)
-end = time.perf_counter()
-time_elapsed = end - start
+num_cycles = 5
+tests_per_cycle = 3
+num_samples_list = [10000, 100000, 500000]
+time_trials = [1, 10, 30]
+target_value = 0
 
-
-print(f"Joint distribution of ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 0): {prob} \n")
-
-# Testing marginal distribution and tracking time
-# num_samples = 100000
-# start = time.perf_counter()
-# prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
-# end = time.perf_counter()
-# time_elapsed = end - start
-
-# print(f"FMDP sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-# print(f"Estimated P(x_0 == 0): {prob} \n")
+test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list,
+               time_trials=time_trials, target_action=target_action, target_value=target_value, MRF=MRF, LAS=LAS, FMDP=FMDP)

@@ -26,8 +26,10 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         None
     """
     # DF for test data
-    acc_df = pd.read_csv("data/accurace_test_data.csv")
+    acc_df = pd.read_csv("data/accuracy_test_data.csv")
     speed_df = pd.read_csv("data/speed_test_data.csv")
+    gibbs_samping = "Gibbs"
+    token_sampling = "Token"
 
     # Track number of cycles
     cycles = 0
@@ -39,9 +41,11 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         
         # Track number of tests
         tests = 0
+        
+        print(f"Running cycle: {cycles}")
 
         while(tests < tests_per_cycle):
-            # TEST FOR SPEED / ACCURACY FOR EACH VALUE IN num_samples
+            # Test for speed / accuracy for each value in num_samples
             for num_samples in num_samples_list:
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
                 start = time.perf_counter()
@@ -51,137 +55,141 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
 
                 # Testing token sampling marginal probability that P(target_action == target_value)
                 start = time.perf_counter()
-                token_prob = FMDP.token_sampling(initial_action=0, target_value=0, num_samples=num_samples)
+                token_prob = FMDP.token_sampling(initial_action=target_action, target_value=target_value, num_samples=num_samples)
                 end = time.perf_counter()
                 token_time_elapsed = end - start
 
-                # Place data into dataframe at lowest location
-                # accuracy_test_data shape = [sample_type,num_samples,time_elapsed,estimated_distribution]
-                acc_df.loc[len(acc_df)] = ["Gibbs", f'{num_samples}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
-                acc_df.loc[len(acc_df)] = ["Token", f'{num_samples}', f'{token_time_elapsed}', f'{token_prob}']
+                # Place data into dataframe at lowest location : accuracy_test_data shape = [sample_type,num_samples,time_elapsed,estimated_distribution]
+                acc_df.loc[len(acc_df)] = [f'{gibbs_samping}', f'{num_samples}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
+                acc_df.loc[len(acc_df)] = [f'{token_sampling}', f'{num_samples}', f'{token_time_elapsed}', f'{token_prob}']
 
-
-            # TEST FOR ACCURACY FOR EACH VALUE IN time_test
+            # Test for accuracy for each value in time_test
             for time_trial in time_trials:
+                # Estimating gibbs sampling marginal probability that P(target_action == target_value)
+                gibbs_prob = FMDP.gibbs_sampling(action=target_action, value=target_value, time_limit=time_trial)
 
+                # Testing token sampling marginal probability that P(target_action == target_value)
+                token_prob = FMDP.token_sampling(initial_action=target_action, target_value=target_value, time_limit=time_trial)
 
-                # speed_test_data shape = [sample_type,set_time,estimated_distribution]
-                speed_df.loc[len(speed_df)] = ["Gibbs", f'{num_samples}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
-                speed_df.loc[len(speed_df)] = ["Token", f'{num_samples}', f'{token_time_elapsed}', f'{token_prob}']
+                # Place data into dataframe at lowest location : speed_test_data shape = [sample_type,set_time,estimated_distribution]
+                speed_df.loc[len(speed_df)] = [f'{gibbs_samping}', f'{time_trial}', f'{gibbs_prob}']
+                speed_df.loc[len(speed_df)] = [f'{token_sampling}', f'{time_trial}', f'{token_prob}']
 
             tests += 1
-
-    cycles += 1
+            print(f"Finished test {tests}")
+        
+        print("\n")
+        cycles += 1
 
     acc_df.to_csv("data/accuracy_test_data.csv", index=False, header=True)
     speed_df.to_csv("data/speed_test_data.csv", index=False, header=True)
 
-        # Binary 4x3-Neighborhood MRF Example
-    # Initialize MRF
-MRF = M.MarkovRandomField()
-domain = [0, 1]
-height = 3
-width = 4
+#         # Binary 4x3-Neighborhood MRF Example
+#     # Initialize MRF
+# MRF = M.MarkovRandomField()
+# domain = [0, 1]
+# height = 3
+# width = 4
 
-# Create vertices labeled 0 -> 11
-for i in range(0, height * width):
-    # Add vertex
-    MRF.add_vertex(i, domain)
+# # Create vertices labeled 0 -> 11
+# for i in range(0, height * width):
+#     # Add vertex
+#     MRF.add_vertex(i, domain)
 
-# Create edges
-for i in range(0, height):
-    for j in range(0, width):
-        # Location of current vertex = (i * width + j)
-        vloc = i * width + j
+# # Create edges
+# for i in range(0, height):
+#     for j in range(0, width):
+#         # Location of current vertex = (i * width + j)
+#         vloc = i * width + j
 
-        # Add edge to the right of vertex
-        if (j != width - 1): MRF.add_edge(vloc, vloc + 1)
+#         # Add edge to the right of vertex
+#         if (j != width - 1): MRF.add_edge(vloc, vloc + 1)
 
-        # Add edge below the vertex
-        if (i != height - 1): MRF.add_edge(vloc, vloc + width)
+#         # Add edge below the vertex
+#         if (i != height - 1): MRF.add_edge(vloc, vloc + width)
 
-# Auto propagate the CPTs with random probabilities
-MRF.auto_propagate_cpt()
+# # Auto propagate the CPTs with random probabilities
+# MRF.auto_propagate_cpt()
 
-    # Initialize LAS
-LAS = L.LiveAndSafe()
-acyclic_pointer = 0
+#     # Initialize LAS
+# LAS = L.LiveAndSafe()
+# acyclic_pointer = 0
 
-# Use MRF to add vertices / edges
-LAS.set_vertices(MRF.vertices())
-LAS.set_edges(MRF.edges(), ptr=acyclic_pointer)
-tokens = LAS.get_tokens()
+# # Use MRF to add vertices / edges
+# LAS.set_vertices(MRF.vertices())
+# LAS.set_edges(MRF.edges(), ptr=acyclic_pointer)
+# tokens = LAS.get_tokens()
 
-    # Initialize FMDP
-FMDP = F.FactoredMarkovDecisionProcess()
-FMDP.set_actions(MRF.vertices())
-FMDP.set_edges(LAS.get_edges())
-FMDP.set_components(LAS.get_tokens())
-FMDP.set_domains(MRF.get_domains())
-FMDP.set_cpts(MRF.get_cpts())
-FMDP.set_random_values()
+#     # Initialize FMDP
+# FMDP = F.FactoredMarkovDecisionProcess()
+# FMDP.set_actions(MRF.vertices())
+# FMDP.set_edges(LAS.get_edges())
+# FMDP.set_components(LAS.get_tokens())
+# FMDP.set_domains(MRF.get_domains())
+# FMDP.set_cpts(MRF.get_cpts())
+# FMDP.set_random_values()
 
-# Estimating gibbs sampling marginal probability that P(x_5 == 1)
-num_samples = 100000
-start = time.perf_counter()
-prob = FMDP.gibbs_sampling(action=5, value=1, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
+# # Estimating gibbs sampling marginal probability that P(x_5 == 1)
+# num_samples = 100000
+# start = time.perf_counter()
+# prob = FMDP.gibbs_sampling(action=5, value=1, num_samples=num_samples)
+# end = time.perf_counter()
+# time_elapsed = end - start
 
-print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_5 == 1): {prob} \n")
+# print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+# print(f"Estimated P(x_5 == 1): {prob} \n")
 
-# Testing marginal distribution and tracking time
-num_samples = 100000
-start = time.perf_counter()
-prob = FMDP.token_sampling(initial_action=5, target_value=1, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
+# # Testing marginal distribution and tracking time
+# num_samples = 100000
+# start = time.perf_counter()
+# prob = FMDP.token_sampling(initial_action=5, target_value=1, num_samples=num_samples)
+# end = time.perf_counter()
+# time_elapsed = end - start
 
-print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_5 == 1): {prob} \n")
+# print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+# print(f"Estimated P(x_5 == 1): {prob} \n")
 
-print("\n")
+# print("\n")
 
-# Estimating gibbs sampling marginal probability that P(x_0 == 1)
-num_samples = 100000
-start = time.perf_counter()
-prob = FMDP.gibbs_sampling(action=0, value=1, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
+# # Estimating gibbs sampling marginal probability that P(x_0 == 1)
+# num_samples = 100000
+# start = time.perf_counter()
+# prob = FMDP.gibbs_sampling(action=0, value=1, num_samples=num_samples)
+# end = time.perf_counter()
+# time_elapsed = end - start
 
-print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 1): {prob} \n")
+# print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+# print(f"Estimated P(x_0 == 1): {prob} \n")
 
-# Testing marginal distribution and tracking time
-num_samples = 100000
-start = time.perf_counter()
-prob = FMDP.token_sampling(initial_action=0, target_value=1, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
+# # Testing marginal distribution and tracking time
+# num_samples = 100000
+# start = time.perf_counter()
+# prob = FMDP.token_sampling(initial_action=0, target_value=1, num_samples=num_samples)
+# end = time.perf_counter()
+# time_elapsed = end - start
 
-print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 1): {prob} \n")
+# print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+# print(f"Estimated P(x_0 == 1): {prob} \n")
 
-# Estimating gibbs sampling marginal probability that P(x_0 == 0)
-num_samples = 1000000
-start = time.perf_counter()
-prob = FMDP.gibbs_sampling(0, 0, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
+# # Estimating gibbs sampling marginal probability that P(x_0 == 0)
+# num_samples = 1000000
+# start = time.perf_counter()
+# prob = FMDP.gibbs_sampling(0, 0, num_samples=num_samples)
+# end = time.perf_counter()
+# time_elapsed = end - start
 
-print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 0): {prob} \n")
+# print(f"Gibbs sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+# print(f"Estimated P(x_0 == 0): {prob} \n")
 
-# Testing marginal distribution and tracking time
-num_samples = 1000000
-start = time.perf_counter()
-prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
-end = time.perf_counter()
-time_elapsed = end - start
+# # Testing marginal distribution and tracking time
+# num_samples = 1000000
+# start = time.perf_counter()
+# prob = FMDP.token_sampling(0, 0, num_samples=num_samples)
+# end = time.perf_counter()
+# time_elapsed = end - start
 
-print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
-print(f"Estimated P(x_0 == 0): {prob} \n")
+# print(f"Token sampling ({num_samples} samples) took {time_elapsed:.6f} seconds")
+# print(f"Estimated P(x_0 == 0): {prob} \n")
 
 
 # Testing joint distribution and tracking time
