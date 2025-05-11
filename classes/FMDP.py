@@ -251,15 +251,14 @@ class FactoredMarkovDecisionProcess:
         
         return activation_sequence
     
-    def joint_distribution(self, num_samples: int = 10000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
+    def joint_distribution(self, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
         """
         Estimate the joint distribution by using gibbs sampling,
         keeping track of the number of times each global state is observed
         Picks an arbitrary fixed activation sequence
 
         Args:
-            initial_action: The starting activated action
-            num_samples: The number of samples to use for distribution
+            action_samples: The # of samples of the target_action (total # of sampled values = action_samples * # of actions)
             burn_in: The number of samples to burn before sampling
             time_limit: If positive, limits the sampling based on the time rather than # of samples (in seconds)
             initial_config: Initial global configuration
@@ -320,7 +319,10 @@ class FactoredMarkovDecisionProcess:
                 if(sample_count % 10 == 0):
                     current = time.perf_counter()
                 
-            return samples
+            return samples 
+
+        # Total Number of samples = action_samples * total # of actions
+        num_samples = action_samples * len(self._actions)
         
         for i in range(burn_in + num_samples):
             action = activation_order[i % order_length]
@@ -372,7 +374,7 @@ class FactoredMarkovDecisionProcess:
 
         return sum / num_samples
     
-    def gibbs_sampling(self, action: int, value: int, num_samples: int = 10000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> float:
+    def gibbs_sampling(self, action: int, value: int, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> float:
         """
         Returns the marginal distribution
 
@@ -387,25 +389,25 @@ class FactoredMarkovDecisionProcess:
         Returns:
             float: The estimated probability that the action has the given value
         """
-        joint_distribution = self.joint_distribution(num_samples=num_samples, burn_in=burn_in, time_limit=time_limit, initial_config=initial_config)
+        joint_distribution = self.joint_distribution(action_samples=action_samples, burn_in=burn_in, time_limit=time_limit, initial_config=initial_config)
         
         return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value)
 
-    def token_sampling(self, initial_action: int, target_value: int, num_samples: int = 10000, burn_in: int = 100, time_limit: int = -1) -> float:
+    def token_sampling(self, target_action: int, target_value: int, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1) -> float:
         """
         Returns an estimate of the marginal probability P(action == value) with token sampling
         
         Args:
-            initial_action: The action we are marginalizing
+            target_action: The action we are marginalizing
             target_value: The value of the action we want to know the probability of
-            num_samples: The number of samples to take
+            action_samples: The total number of samples of the target_action we want to take
             burn_in: The number of samples to ignore before tracking their values
             time_limit: If positive, limits the sampling based on time rather than the number of samples (in seconds)
         
         Returns:
             float: Estimated P(action == value)
         """
-        activation_order = self.derive_activation(initial_action)
+        activation_order = self.derive_activation(target_action)
         order_length = len(activation_order)
 
         current_config = self._values.copy() 
@@ -438,7 +440,7 @@ class FactoredMarkovDecisionProcess:
                 # Only add to samples if we are past burn in value
                 if (sample_count >= burn_in):
                     # Add to count iff value of action == value
-                    count += (current_config[initial_action] == target_value)
+                    count += (current_config[target_action] == target_value)
                 
                 sample_count += 1
                 
@@ -446,12 +448,17 @@ class FactoredMarkovDecisionProcess:
                 if(sample_count % 10 == 0):
                     current = time.perf_counter()
             
-            return count / sample_count
+            return count / (sample_count - burn_in)
             
+        # Sample target will track # of times we sample target_action
+        sample_count = 0
+        sample_target = 0
+
         # Limit based on number of samples
-        for i in range(burn_in + num_samples):
-            action = activation_order[i % order_length]
-            
+        while(sample_target < action_samples):
+            action = activation_order[sample_count % order_length]
+            sample_target += (action == target_action) 
+
             # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
             neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
             for a in self._edges[action]:
@@ -465,8 +472,10 @@ class FactoredMarkovDecisionProcess:
             current_config[action] = value
             
             # Only add to samples if we are past burn in value
-            if (i >= burn_in):
-                # Add to count iff value of action == value
-                count += (current_config[initial_action] == target_value)
+            if (sample_count >= burn_in):
+                # Add to count iff value of target_action == target_value
+                count += (current_config[target_action] == target_value)
             
-        return count / num_samples
+            sample_count += 1
+            
+        return count / (sample_count - burn_in)
