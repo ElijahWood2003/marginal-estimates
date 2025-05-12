@@ -8,6 +8,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
+# Fix a small delta for the ground truth and continue until within the delta (from gibbs sampling)
+    # Use token sampling with different values of time until it reaches the same delta
+# Compare differences in efficiency based on # of actions fired
+# Two independent experimentation, one for accuracy one for time
+# Run more complicated MRF (Can parameterize for larger MRFs NxM grid)
+
 
 def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
     """
