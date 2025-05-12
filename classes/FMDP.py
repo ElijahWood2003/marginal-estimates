@@ -249,7 +249,8 @@ class FactoredMarkovDecisionProcess:
                 for action in depth_list[k]:
                     activation_sequence.append(action)
         
-        return activation_sequence
+        # Exclude the last index which will be the target action since we are looping
+        return activation_sequence[0: len(activation_sequence) - 1]
     
     def joint_distribution(self, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> Dict[tuple, int]:
         """
@@ -352,6 +353,78 @@ class FactoredMarkovDecisionProcess:
                 
         return samples
     
+    def marginal_distribution_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, initial_config: Dict[int, int] = None) -> float:
+        """
+        Estimate the joint distribution by using gibbs sampling,
+        keeping track of the number of times each global state is observed
+        Picks an arbitrary fixed activation sequence
+
+        This function is used to find the 'ground truth' of a sampling distribution.
+        It takes the marginal distribution every sample period # of samples, then
+        compares it to the previous sampling period. If the difference between these
+        two samples is less than the delta value, it will return this distribution.
+
+        Args:
+            target_action: The action we want to marginalize
+            target_value: The value of the action we want to marginalize for P(target_action == target_value)
+            delta: The difference required between samples to return the distribution
+            sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
+            initial_config: Initial global configuration
+
+        Returns:
+            joint distribution as a dictionary:
+                values(x1, x2, ... xn) : # of times this global state has been observed
+
+        """
+        if(initial_config):
+            self._values = initial_config
+
+        activation_order = np.random.permutation(list(self._actions))
+        order_length = len(activation_order)
+
+        count = 0
+        current_config = self._values.copy()
+        
+        # Our two distributions we will compare the delta
+        d1 = 0.0
+        d2 = 1.0
+
+        # Tuple of all values where each index represents the value for its respective action
+        max_key = max(current_config.keys())
+        values = tuple(current_config[i] for i in range(max_key + 1))
+
+        sample_count = 0
+            
+        while(abs(d1 - d2) > delta):
+            action = activation_order[sample_count % order_length]
+            
+            # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+            neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+            for a in self._edges[action]:
+                neighbor_set.add((a, int(current_config[a])))
+
+            probabilities = self._cpts[action][frozenset(neighbor_set)]
+            domains, probs = zip(*probabilities.items())
+            value = np.random.choice(domains, p=probs)
+
+            # Convert values to list, mutate, then convert back to tuple
+            current_config[action] = value
+            value_list = list(values)
+            value_list[action] = value
+            values = tuple(value_list)
+
+            # Add to count iff target_action == target_value
+            count += (current_config[target_action] == target_value) 
+            
+            sample_count += 1
+
+            # Check if we are at a new sample period
+            if(sample_count % sample_period == 0):
+                d1 = d2
+                d2 = count / sample_count
+                    
+        return d2 
+
     def joint_distribution_to_marginal_probability(self, joint_distribution: Dict[tuple, int], action: int, value: int) -> float:
         """
         Returns the marginal probability of the action given the joint distribution
@@ -372,7 +445,7 @@ class FactoredMarkovDecisionProcess:
             sum += v * (key[action] == value)   # Add to the sum iff the value is what we are looking for
             num_samples += v
 
-        return sum / num_samples
+        return sum / num_samples 
     
     def gibbs_sampling(self, action: int, value: int, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> float:
         """

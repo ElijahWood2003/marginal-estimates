@@ -55,14 +55,19 @@ FMDP.set_random_values()
 
 num_cycles = 1
 tests_per_cycle = 1
-num_samples_list = [10000, 100000, 500000]
+num_samples_list = [10000]
 time_trials = [1, 10, 30]
 target_value = 0
 
+start = time.perf_counter()
+print(FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=0.000001))   
+end = time.perf_counter()
+delta_time = end - start
+
+print(f"Delta Time: {delta_time}")
 
 # Run tests on data
-test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list,
-            time_trials=time_trials, target_action=target_action, target_value=target_value, MRF=MRF, LAS=LAS, FMDP=FMDP)
+# test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, MRF=MRF, LAS=LAS, FMDP=FMDP)
 
 # Graph data
 # test.graph_data()
