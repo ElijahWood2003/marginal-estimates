@@ -5,8 +5,9 @@ import classes.FMDP as F
 import time
 import test
 
-# TODO: Create gibbs sampling which can be used as 'base truth' for distribution with some delta
-# TODO: Compare samples to this base truth for speed and accuracy
+# TODO: Update csv data file names
+# TODO: Add base truth csv data file for each cycle
+# TODO: Update tests and graph data functions based on base truth
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
