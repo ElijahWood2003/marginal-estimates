@@ -5,11 +5,8 @@ import classes.FMDP as F
 import time
 import test
 
-# TODO: Create test.py file with test functions
-# TODO: Output test data to csv file
-# TODO: Run tests on range of samples and compare times
-# TODO: Compare accuracies of different # of samples
-# TODO: Create simple graph showing differences in speeds / accuracies
+# TODO: Create gibbs sampling which can be used as 'base truth' for distribution with some delta
+# TODO: Compare samples to this base truth for speed and accuracy
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
