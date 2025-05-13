@@ -9,7 +9,7 @@ import seaborn as sns
 import numpy as np
 
 
-def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
+def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, delta: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
     """
     Run tests to track the accuracy and speed of estimating marginal distributions for
     gibbs sampling versus token sampling
@@ -29,22 +29,32 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         None
     """
     # DF for test data
-    acc_df = pd.read_csv("data/accuracy_test_data.csv")
-    speed_df = pd.read_csv("data/speed_test_data.csv")
+    samples_df = pd.read_csv("data/set_samples_data.csv")
+    time_df = pd.read_csv("data/set_time_data.csv")
+    ground_df = pd.read_csv("data/ground_truth_data.csv")
+    
     gibbs_samping = "Gibbs"
     token_sampling = "Token"
 
     # Track number of cycles
     cycles = 0
     meta_cycle = 0
-    if(len(acc_df) > 0):
-        meta_cycle = acc_df['cycle'].iloc[-1] + 1
+    if(len(samples_df) > 0):
+        meta_cycle = samples_df['cycle'].iloc[-1] + 1
 
     while(cycles < num_cycles):
         # Randomize CPT table for each new cycle
         MRF.auto_propagate_cpt()
         FMDP.set_cpts(MRF.get_cpts())
         
+        # Finding the ground truth (1 ground truth per cycle)
+        start = time.perf_counter()
+        ground_truth_prob = FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=delta)
+        end = time.perf_counter()
+        ground_truth_time = end - start
+        
+        ground_df.loc[len(ground_df)] = [f'{meta_cycle}', f'{ground_truth_time}', f'{delta}', f'{ground_truth_prob}']
+
         # Track number of tests
         tests = 0
         
@@ -52,7 +62,7 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
 
         while(tests < tests_per_cycle):
             # Test for speed / accuracy for each value in num_samples
-            for action_samples in num_samples_list:
+            for action_samples in num_samples_list:  
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
                 start = time.perf_counter()
                 gibbs_prob = FMDP.gibbs_sampling(action=target_action, value=target_value, action_samples=action_samples)
@@ -66,8 +76,8 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
                 token_time_elapsed = end - start
 
                 # Place data into dataframe at lowest location : accuracy_test_data shape = [sample_type,num_samples,time_elapsed,estimated_distribution]
-                acc_df.loc[len(acc_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{action_samples}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
-                acc_df.loc[len(acc_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{action_samples}', f'{token_time_elapsed}', f'{token_prob}']
+                samples_df.loc[len(samples_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{action_samples}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
+                samples_df.loc[len(samples_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{action_samples}', f'{token_time_elapsed}', f'{token_prob}']
 
             # Test for accuracy for each value in time_test
             for time_trial in time_trials:
@@ -78,8 +88,8 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
                 token_prob = FMDP.token_sampling(target_action=target_action, target_value=target_value, time_limit=time_trial)
 
                 # Place data into dataframe at lowest location : speed_test_data shape = [sample_type,set_time,estimated_distribution]
-                speed_df.loc[len(speed_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{time_trial}', f'{gibbs_prob}']
-                speed_df.loc[len(speed_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{time_trial}', f'{token_prob}']
+                time_df.loc[len(time_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{time_trial}', f'{gibbs_prob}']
+                time_df.loc[len(time_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{time_trial}', f'{token_prob}']
 
             tests += 1
             print(f"Finished test {tests}")
@@ -88,8 +98,9 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         cycles += 1
         meta_cycle += 1
 
-    acc_df.to_csv("data/accuracy_test_data.csv", index=False, header=True)
-    speed_df.to_csv("data/speed_test_data.csv", index=False, header=True)
+    samples_df.to_csv("data/set_samples_data.csv", index=False, header=True)
+    time_df.to_csv("data/set_time_data.csv", index=False, header=True)
+    ground_df.to_csv("data/ground_truth_data.csv", index=False, header=True)
 
 def graph_data():
     """
@@ -97,15 +108,15 @@ def graph_data():
     
     """
     # Get DF
-    acc_df = pd.read_csv('data/accuracy_test_data.csv')
-    speed_df = pd.read_csv('data/speed_test_data.csv')
+    samples_df = pd.read_csv('data/accuracy_test_data.csv')
+    time_df = pd.read_csv('data/speed_test_data.csv')
 
     # Calculate the "true" distribution for each cycle (average of 30s estimates)
-    true_dist = speed_df[speed_df['set_time'] == 30].groupby(['cycle', 'sample_type'])['estimated_distribution'].mean()
+    true_dist = time_df[time_df['set_time'] == 30].groupby(['cycle', 'sample_type'])['estimated_distribution'].mean()
     true_dist = true_dist.reset_index().rename(columns={'estimated_distribution': 'true_distribution'})
 
     # Merge this ground truth back with the original data
-    merged = pd.merge(speed_df, true_dist, on=['cycle', 'sample_type'])
+    merged = pd.merge(time_df, true_dist, on=['cycle', 'sample_type'])
 
     # Calculate absolute error from ground truth
     merged['abs_error'] = np.abs(merged['estimated_distribution'] - merged['true_distribution'])

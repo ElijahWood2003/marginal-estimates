@@ -6,8 +6,8 @@ import time
 import test
 
 # TODO: Update csv data file names
-# TODO: Add base truth csv data file for each cycle
-# TODO: Update tests and graph data functions based on base truth
+# TODO: Add ground truth csv data file for each cycle
+# TODO: Update tests and graph data functions based on ground truth
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
@@ -56,19 +56,21 @@ FMDP.set_random_values()
 
 num_cycles = 1
 tests_per_cycle = 1
-num_samples_list = [10000]
+num_samples_list = [10000, 50000, 100000]
 time_trials = [1, 10, 30]
 target_value = 0
+long_delta = 0.0000001
+short_delta = 0.000001
 
-start = time.perf_counter()
-print(FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=0.000001))   
-end = time.perf_counter()
-delta_time = end - start
+# start = time.perf_counter()
+# print(FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=0.0000001))   
+# end = time.perf_counter()
+# delta_time = end - start
 
-print(f"Delta Time: {delta_time}")
+# print(f"Delta Time: {delta_time}")
 
 # Run tests on data
-# test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, MRF=MRF, LAS=LAS, FMDP=FMDP)
+test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, delta=short_delta, MRF=MRF, LAS=LAS, FMDP=FMDP)
 
 # Graph data
 # test.graph_data()
