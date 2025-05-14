@@ -54,8 +54,8 @@ FMDP.set_domains(MRF.get_domains())
 FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
-num_cycles = 1
-tests_per_cycle = 1
+num_cycles = 5
+tests_per_cycle = 5
 num_samples_list = [10000, 50000, 100000]
 time_trials = [1, 10, 30]
 target_value = 0
@@ -70,7 +70,8 @@ short_delta = 0.000001
 # print(f"Delta Time: {delta_time}")
 
 # Run tests on data
-test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, delta=short_delta, MRF=MRF, LAS=LAS, FMDP=FMDP)
+# test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, delta=short_delta, MRF=MRF, LAS=LAS, FMDP=FMDP)
 
 # Graph data
 # test.graph_data()
+test.graph_time_data(time_trials)

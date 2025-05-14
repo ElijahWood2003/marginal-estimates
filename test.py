@@ -171,3 +171,67 @@ def graph_data():
 
     plt.tight_layout()
     plt.show()
+
+
+def graph_time_data(time_trials: list[int]):
+    # Load the data with explicit numeric conversion
+    ground_truth = pd.read_csv('data/ground_truth_data.csv', dtype={
+        'cycle': int,
+        'time_elapsed': float,
+        'delta': float,
+        'estimated_distribution': float
+    })
+
+    set_time_data = pd.read_csv('data/set_time_data.csv', dtype={
+        'cycle': int,
+        'sample_type': str,
+        'set_time': int,
+        'estimated_distribution': float
+    })
+
+    # Merge with set time data
+    merged = pd.merge(set_time_data, ground_truth[['estimated_distribution']], 
+                    left_on='cycle', right_index=True,
+                    suffixes=('', '_ground_truth'))
+
+    # Calculate absolute difference from ground truth
+    merged['abs_diff'] = np.abs(merged['estimated_distribution'] - 
+                        merged['estimated_distribution_ground_truth'])
+
+    # Group by sample_type and set_time to get mean differences
+    plot_data = merged.groupby(['sample_type', 'set_time'])['abs_diff'].mean().reset_index()
+
+    # Create the bar plot
+    plt.figure(figsize=(10, 6))
+    sns.set_style("whitegrid")
+
+    # Bar positions
+    bar_width = 0.35
+    x_pos = np.arange(len(time_trials))  # x positions for time settings
+
+    # Plot Gibbs and Token side by side
+    for i, sample_type in enumerate(['Gibbs', 'Token']):
+        subset = plot_data[plot_data['sample_type'] == sample_type]
+        plt.bar(x_pos + (i * bar_width), 
+                subset['abs_diff'],
+                width=bar_width,
+                label=sample_type,
+                alpha=0.8)
+
+    # Customize plot
+    plt.title('Average Absolute Difference from Ground Truth\nby Time Setting and Sampling Method', pad=20)
+    plt.xlabel('Time Setting (seconds)', labelpad=10)
+    plt.ylabel('Average Absolute Difference', labelpad=10)
+    plt.xticks(x_pos + bar_width/2, time_trials)
+    plt.legend(title='Sampling Method')
+
+    # Add value labels on top of bars
+    for i, sample_type in enumerate(['Gibbs', 'Token']):
+        subset = plot_data[plot_data['sample_type'] == sample_type]
+        for j, val in enumerate(subset['abs_diff']):
+            plt.text(x_pos[j] + (i * bar_width), val + 0.001, 
+                    f'{val:.4f}', 
+                    ha='center', va='bottom')
+
+    plt.tight_layout()
+    plt.show()
