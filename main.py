@@ -54,10 +54,13 @@ FMDP.set_domains(MRF.get_domains())
 FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
+# Maybe better times would be 5, 30, 60
+# Better samples would be 25000, 100000, 500000
+
 num_cycles = 5
 tests_per_cycle = 5
-num_samples_list = [10000, 50000, 100000]
-time_trials = [1, 10, 30]
+num_samples_list = [25000, 100000, 500000]
+time_trials = [5, 30, 60]
 target_value = 0
 long_delta = 0.0000001
 short_delta = 0.000001
@@ -75,3 +78,4 @@ short_delta = 0.000001
 # Graph data
 # test.graph_data()
 test.graph_time_data(time_trials)
+test.graph_samples_data(num_samples_list)

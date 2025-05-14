@@ -102,72 +102,67 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
     time_df.to_csv("data/set_time_data.csv", index=False, header=True)
     ground_df.to_csv("data/ground_truth_data.csv", index=False, header=True)
 
-def graph_data():
-    """
-    Graph the data from the csv files
-    
-    """
-    # Get DF
-    samples_df = pd.read_csv('data/accuracy_test_data.csv')
-    time_df = pd.read_csv('data/speed_test_data.csv')
+def graph_samples_data(samples_list: list[int]):
+    # Load the data with explicit numeric conversion
+    ground_truth = pd.read_csv('data/ground_truth_data.csv', dtype={
+        'cycle': int,
+        'time_elapsed': float,
+        'delta': float,
+        'estimated_distribution': float
+    })
 
-    # Calculate the "true" distribution for each cycle (average of 30s estimates)
-    true_dist = time_df[time_df['set_time'] == 30].groupby(['cycle', 'sample_type'])['estimated_distribution'].mean()
-    true_dist = true_dist.reset_index().rename(columns={'estimated_distribution': 'true_distribution'})
+    set_samples_data = pd.read_csv('data/set_samples_data.csv', dtype={
+        'cycle': int,
+        'sample_type': str,
+        'num_samples': int,
+        'time_elapsed': float,
+        'estimated_distribution': float
+    })
 
-    # Merge this ground truth back with the original data
-    merged = pd.merge(time_df, true_dist, on=['cycle', 'sample_type'])
+    # Merge with set samples data
+    merged = pd.merge(set_samples_data, ground_truth[['estimated_distribution']], 
+                    left_on='cycle', right_index=True,
+                    suffixes=('', '_ground_truth'))
 
-    # Calculate absolute error from ground truth
-    merged['abs_error'] = np.abs(merged['estimated_distribution'] - merged['true_distribution'])
+    # Calculate absolute difference from ground truth
+    merged['abs_diff'] = np.abs(merged['estimated_distribution'] - 
+                        merged['estimated_distribution_ground_truth'])
 
-    # Filter out the 30s estimates (since they're our ground truth)
-    comparison_data = merged[merged['set_time'].isin([1, 10])]
+    # Group by sample_type and num_samples to get mean differences
+    plot_data = merged.groupby(['sample_type', 'num_samples'])['abs_diff'].mean().reset_index()
 
-    # Create the visualization
-    plt.figure(figsize=(12, 6))
+    # Create the bar plot
+    plt.figure(figsize=(10, 6))
     sns.set_style("whitegrid")
 
-    # Create a boxplot showing error distribution by time and sample type
-    ax = sns.boxplot(
-        x='set_time', 
-        y='abs_error', 
-        hue='sample_type', 
-        data=comparison_data,
-        palette={'Gibbs': 'skyblue', 'Token': 'salmon'},
-        width=0.6
-    )
+    # Bar positions
+    bar_width = 0.35
+    x_pos = np.arange(len(samples_list))  # x positions for time settings
 
-    # Add mean markers
-    means = comparison_data.groupby(['set_time', 'sample_type'])['abs_error'].mean().reset_index()
-    sns.stripplot(
-        x='set_time', 
-        y='abs_error', 
-        hue='sample_type', 
-        data=means,
-        palette={'Gibbs': 'blue', 'Token': 'red'},
-        size=10, 
-        marker='D',
-        jitter=False,
-        ax=ax,
-        legend=False
-    )
+    # Plot Gibbs and Token side by side
+    for i, sample_type in enumerate(['Gibbs', 'Token']):
+        subset = plot_data[plot_data['sample_type'] == sample_type]
+        plt.bar(x_pos + (i * bar_width), 
+                subset['abs_diff'],
+                width=bar_width,
+                label=sample_type,
+                alpha=0.8)
 
-    # Customize the plot
-    plt.title('Accuracy of Short vs Medium Estimates Compared to 30s Ground Truth', pad=20)
-    plt.xlabel('Estimation Time (seconds)')
-    plt.ylabel('Absolute Error from Ground Truth')
-    plt.legend(title='Sampling Method', bbox_to_anchor=(1.05, 1), loc='upper left')
+    # Customize plot
+    plt.title('Average Absolute Difference from Ground Truth\nby Number of Samples and Sampling Method', pad=20)
+    plt.xlabel('Number of Samples', labelpad=10)
+    plt.ylabel('Average Absolute Difference', labelpad=10)
+    plt.xticks(x_pos + bar_width/2, samples_list)
+    plt.legend(title='Sampling Method')
 
-    # Annotate the means
-    # for i, row in means.iterrows():
-    #     ax.text(
-    #         row['set_time'] - (0.15 if row['sample_type'] == 'Gibbs' else 0.15),
-    #         row['abs_error'] + 0.001,
-    #         f"μ={row['abs_error']:.4f}",
-    #         color='blue' if row['sample_type'] == 'Gibbs' else 'red',
-    #         fontsize=9
-    #     )
+    # Add value labels on top of bars
+    Y_CONST = 0.0001
+    for i, sample_type in enumerate(['Gibbs', 'Token']):
+        subset = plot_data[plot_data['sample_type'] == sample_type]
+        for j, val in enumerate(subset['abs_diff']):
+            plt.text(x_pos[j] + (i * bar_width), val + Y_CONST, 
+                    f'{val:.4f}', 
+                    ha='center', va='bottom')
 
     plt.tight_layout()
     plt.show()
@@ -226,10 +221,11 @@ def graph_time_data(time_trials: list[int]):
     plt.legend(title='Sampling Method')
 
     # Add value labels on top of bars
+    Y_CONST = .0001
     for i, sample_type in enumerate(['Gibbs', 'Token']):
         subset = plot_data[plot_data['sample_type'] == sample_type]
         for j, val in enumerate(subset['abs_diff']):
-            plt.text(x_pos[j] + (i * bar_width), val + 0.001, 
+            plt.text(x_pos[j] + (i * bar_width), val + Y_CONST, 
                     f'{val:.4f}', 
                     ha='center', va='bottom')
 
