@@ -45,7 +45,7 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
     total_start_time = time.perf_counter()
 
     while(cycles < num_cycles):
-        print(f"Running cycle: {cycles}")
+        print(f"Running cycle: {cycles + 1}")
         
         # Randomize CPT table for each new cycle
         MRF.auto_propagate_cpt()

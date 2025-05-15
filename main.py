@@ -63,7 +63,7 @@ long_delta = 0.0000001
 short_delta = 0.000001
 
 # Run tests on data
-test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, delta=short_delta, MRF=MRF, LAS=LAS, FMDP=FMDP)
+# test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, delta=short_delta, MRF=MRF, LAS=LAS, FMDP=FMDP)
 
 # Graph data
 test.graph_time_data(time_trials)
