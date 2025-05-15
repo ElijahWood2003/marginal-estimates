@@ -5,9 +5,7 @@ import classes.FMDP as F
 import time
 import test
 
-# TODO: Update csv data file names
-# TODO: Add ground truth csv data file for each cycle
-# TODO: Update tests and graph data functions based on ground truth
+# TODO: Run tests on 50x50 MRF Example
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
@@ -54,10 +52,8 @@ FMDP.set_domains(MRF.get_domains())
 FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
-# Maybe better times would be 5, 30, 60
-# Better samples would be 25000, 100000, 500000
-
-num_cycles = 5
+# Variables for testing
+num_cycles = 3
 tests_per_cycle = 5
 num_samples_list = [25000, 100000, 500000]
 time_trials = [5, 30, 60]
@@ -76,6 +72,5 @@ short_delta = 0.000001
 # test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, delta=short_delta, MRF=MRF, LAS=LAS, FMDP=FMDP)
 
 # Graph data
-# test.graph_data()
 test.graph_time_data(time_trials)
 test.graph_samples_data(num_samples_list)

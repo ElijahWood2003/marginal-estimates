@@ -41,8 +41,13 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
     meta_cycle = 0
     if(len(samples_df) > 0):
         meta_cycle = samples_df['cycle'].iloc[-1] + 1
+        
+    # Track total test running time
+    total_start_time = time.perf_counter()
 
     while(cycles < num_cycles):
+        print(f"Running cycle: {cycles}")
+        
         # Randomize CPT table for each new cycle
         MRF.auto_propagate_cpt()
         FMDP.set_cpts(MRF.get_cpts())
@@ -53,12 +58,12 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         end = time.perf_counter()
         ground_truth_time = end - start
         
+        # Place ground truth in DF
         ground_df.loc[len(ground_df)] = [f'{meta_cycle}', f'{ground_truth_time}', f'{delta}', f'{ground_truth_prob}']
+        print(f"Cycle {cycles} ground truth found in {ground_truth_time}")
 
         # Track number of tests
         tests = 0
-        
-        print(f"Running cycle: {cycles}")
 
         while(tests < tests_per_cycle):
             # Test for speed / accuracy for each value in num_samples
@@ -101,6 +106,10 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
     samples_df.to_csv("data/set_samples_data.csv", index=False, header=True)
     time_df.to_csv("data/set_time_data.csv", index=False, header=True)
     ground_df.to_csv("data/ground_truth_data.csv", index=False, header=True)
+    
+    total_end_time = time.perf_counter()
+    total_time = total_end_time - total_start_time
+    print(f"Finished running tests. Total run time: {total_time}")
 
 def graph_samples_data(samples_list: list[int]):
     # Load the data with explicit numeric conversion
