@@ -52,10 +52,7 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         FMDP.set_cpts(MRF.get_cpts())
         
         # Finding the ground truth (1 ground truth per cycle)
-        start = time.perf_counter()
-        ground_truth_prob = FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=delta)
-        end = time.perf_counter()
-        ground_truth_time = end - start
+        ground_truth_prob, ground_truth_time = FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=delta)
         
         # Place ground truth in DF
         ground_df.loc[len(ground_df)] = [f'{meta_cycle}', f'{ground_truth_time}', f'{delta}', f'{ground_truth_prob}']
@@ -68,16 +65,10 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
             # Test for speed / accuracy for each value in num_samples
             for action_samples in num_samples_list:  
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
-                start = time.perf_counter()
-                gibbs_prob = FMDP.gibbs_sampling(action=target_action, value=target_value, action_samples=action_samples)
-                end = time.perf_counter()
-                gibbs_time_elapsed = end - start
+                gibbs_prob, gibbs_time_elapsed = FMDP.gibbs_sampling(action=target_action, value=target_value, action_samples=action_samples)
 
                 # Testing token sampling marginal probability that P(target_action == target_value)
-                start = time.perf_counter()
-                token_prob = FMDP.token_sampling(target_action=target_action, target_value=target_value, action_samples=action_samples)
-                end = time.perf_counter()
-                token_time_elapsed = end - start
+                token_prob, token_time_elapsed = FMDP.token_sampling(target_action=target_action, target_value=target_value, action_samples=action_samples)
 
                 # Place data into dataframe at lowest location : accuracy_test_data shape = [sample_type,num_samples,time_elapsed,estimated_distribution]
                 samples_df.loc[len(samples_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{action_samples}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
@@ -86,10 +77,10 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
             # Test for accuracy for each value in time_test
             for time_trial in time_trials:
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
-                gibbs_prob = FMDP.gibbs_sampling(action=target_action, value=target_value, time_limit=time_trial)
+                gibbs_prob, gibbs_time_elapsed = FMDP.gibbs_sampling(action=target_action, value=target_value, time_limit=time_trial)
 
                 # Testing token sampling marginal probability that P(target_action == target_value)
-                token_prob = FMDP.token_sampling(target_action=target_action, target_value=target_value, time_limit=time_trial)
+                token_prob, token_time_elapsed = FMDP.token_sampling(target_action=target_action, target_value=target_value, time_limit=time_trial)
 
                 # Place data into dataframe at lowest location : speed_test_data shape = [sample_type,set_time,estimated_distribution]
                 time_df.loc[len(time_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{time_trial}', f'{gibbs_prob}']

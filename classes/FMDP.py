@@ -353,7 +353,7 @@ class FactoredMarkovDecisionProcess:
                 
         return samples
     
-    def marginal_distribution_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, initial_config: Dict[int, int] = None) -> float:
+    def marginal_distribution_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None) -> float:
         """
         Estimate the joint distribution by using gibbs sampling,
         keeping track of the number of times each global state is observed
@@ -369,13 +369,17 @@ class FactoredMarkovDecisionProcess:
             target_value: The value of the action we want to marginalize for P(target_action == target_value)
             delta: The difference required between samples to return the distribution
             sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
+            minimum_samples: The minimum amount of samples required
             initial_config: Initial global configuration
 
         Returns:
             joint distribution as a dictionary:
                 values(x1, x2, ... xn) : # of times this global state has been observed
+            total running time as a float
 
         """
+        start = time.perf_counter()
+        
         if(initial_config):
             self._values = initial_config
 
@@ -395,7 +399,7 @@ class FactoredMarkovDecisionProcess:
 
         sample_count = 0
             
-        while(abs(d1 - d2) > delta):
+        while(abs(d1 - d2) > delta or sample_count < minimum_samples):
             action = activation_order[sample_count % order_length]
             
             # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
@@ -422,8 +426,11 @@ class FactoredMarkovDecisionProcess:
             if(sample_count % sample_period == 0):
                 d1 = d2
                 d2 = count / sample_count
-                    
-        return d2 
+        
+        end = time.perf_counter()
+        run_time = end - start
+        
+        return d2, run_time
 
     def joint_distribution_to_marginal_probability(self, joint_distribution: Dict[tuple, int], action: int, value: int) -> float:
         """
@@ -460,11 +467,17 @@ class FactoredMarkovDecisionProcess:
             initial_config: Initial global configuration
 
         Returns:
-            float: The estimated probability that the action has the given value
+            marginal distribution (float): The estimated probability that the action has the given value
+            run time (float): The total running time of this function
         """
+        start = time.perf_counter()
+        
         joint_distribution = self.joint_distribution(action_samples=action_samples, burn_in=burn_in, time_limit=time_limit, initial_config=initial_config)
         
-        return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value)
+        end = time.perf_counter()
+        run_time = end - start
+        
+        return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value), run_time
 
     def token_sampling(self, target_action: int, target_value: int, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1) -> float:
         """
@@ -478,8 +491,11 @@ class FactoredMarkovDecisionProcess:
             time_limit: If positive, limits the sampling based on time rather than the number of samples (in seconds)
         
         Returns:
-            float: Estimated P(action == value)
+            marginal distribution (float): Estimated P(action == value)
+            run time (float): The total running time of this function
         """
+        start = time.perf_counter()
+        
         activation_order = self.derive_activation(target_action)
         order_length = len(activation_order)
 
@@ -521,7 +537,9 @@ class FactoredMarkovDecisionProcess:
                 if(sample_count % 10 == 0):
                     current = time.perf_counter()
             
-            return count / (sample_count - burn_in)
+            end = time.perf_counter()
+            run_time = end - start
+            return count / (sample_count - burn_in), run_time
             
         # Sample target will track # of times we sample target_action
         sample_count = 0
@@ -551,4 +569,7 @@ class FactoredMarkovDecisionProcess:
             
             sample_count += 1
             
-        return count / (sample_count - burn_in)
+        end = time.perf_counter()
+        run_time = end - start
+            
+        return count / (sample_count - burn_in), run_time
