@@ -5,11 +5,7 @@ import classes.FMDP as F
 import time
 import test
 
-# TODO: Create test.py file with test functions
-# TODO: Output test data to csv file
-# TODO: Run tests on range of samples and compare times
-# TODO: Compare accuracies of different # of samples
-# TODO: Create simple graph showing differences in speeds / accuracies
+# TODO: Run tests on 50x50 MRF Example
 
         # Binary 4x3-Neighborhood MRF Example
     # Initialize MRF
@@ -56,16 +52,25 @@ FMDP.set_domains(MRF.get_domains())
 FMDP.set_cpts(MRF.get_cpts())
 FMDP.set_random_values()
 
-num_cycles = 5
-tests_per_cycle = 3
-num_samples_list = [10000, 100000, 500000]
-time_trials = [1, 10, 30]
+# Variables for testing
+num_cycles = 3
+tests_per_cycle = 5
+num_samples_list = [25000, 100000, 500000]
+time_trials = [5, 30, 60]
 target_value = 0
+long_delta = 0.0000001
+short_delta = 0.000001
 
+# start = time.perf_counter()
+# print(FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=0.0000001))   
+# end = time.perf_counter()
+# delta_time = end - start
+
+# print(f"Delta Time: {delta_time}")
 
 # Run tests on data
-# test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list,
-#             time_trials=time_trials, target_action=target_action, target_value=target_value, MRF=MRF, LAS=LAS, FMDP=FMDP)
+# test.run_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, num_samples_list=num_samples_list, time_trials=time_trials, target_action=target_action, target_value=target_value, delta=short_delta, MRF=MRF, LAS=LAS, FMDP=FMDP)
 
 # Graph data
-test.graph_data()
+test.graph_time_data(time_trials)
+test.graph_samples_data(num_samples_list)
