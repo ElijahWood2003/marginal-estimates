@@ -165,7 +165,8 @@ def graph_samples_data(samples_list: list[int]):
 
     plt.tight_layout()
     plt.savefig(fname="images/set_samples.png", dpi=300, bbox_inches='tight')
-    plt.show()
+    plt.close()
+    # plt.show()
 
 def graph_time_data(time_trials: list[int]):
     # Load the data with explicit numeric conversion
@@ -230,4 +231,5 @@ def graph_time_data(time_trials: list[int]):
 
     plt.tight_layout()
     plt.savefig(fname="images/set_time.png", dpi=300, bbox_inches='tight')
-    plt.show()
+    plt.close()
+    # plt.show()
