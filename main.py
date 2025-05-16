@@ -5,7 +5,7 @@ import classes.FMDP as F
 import time
 import test
 
-# TODO: Run tests on (10, 10), (20, 20), (50, 50) MRF Example
+# TODO: Run tests on (10, 10), (20, 20), (50, 50) MRF Example based on set deltas
 # TODO: Parameterize the MRF creation
 
         # Binary 4x3-Neighborhood MRF Example
