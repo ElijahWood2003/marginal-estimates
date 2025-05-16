@@ -12,7 +12,7 @@ GROUND_PATH = "data/4x3_neighborhood/ground_truth_data.csv"
 TIME_PATH = "data/4x3_neighborhood/set_time_data.csv"
 SAMPLES_PATH = "data/4x3_neighborhood/set_samples_data.csv"
 
-def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, delta: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
+def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, delta: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
     """
     Run tests to track the accuracy and speed of estimating marginal distributions for
     gibbs sampling versus token sampling
@@ -55,8 +55,10 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         MRF.auto_propagate_cpt()
         FMDP.set_cpts(MRF.get_cpts())
         
+        minimum_samples = 30000000
+        
         # Finding the ground truth (1 ground truth per cycle)
-        ground_truth_prob, ground_truth_time = FMDP.marginal_distribution_delta(target_action=target_action, target_value=target_value, delta=delta)
+        ground_truth_prob, ground_truth_time = FMDP.gibbs_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, minimum_samples=minimum_samples)
         
         # Place ground truth in DF
         ground_df.loc[len(ground_df)] = [f'{meta_cycle}', f'{ground_truth_time}', f'{delta}', f'{ground_truth_prob}']
@@ -100,6 +102,117 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
     samples_df.to_csv(SAMPLES_PATH, index=False, header=True)
     time_df.to_csv(TIME_PATH, index=False, header=True)
     ground_df.to_csv(GROUND_PATH, index=False, header=True)
+    
+    total_end_time = time.perf_counter()
+    total_time = total_end_time - total_start_time
+    print(f"Finished running tests. Total run time: {total_time} \n")
+
+def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tuple], domain: list[int], target_action: int, target_value: int, delta: float, sample_period: int, minimum_samples: int) -> None:
+    """
+    Parameterized MRF tests which can take any # of (width, height) tuples
+    and build width * height neighborhood MRF's to run tests on.
+    
+    Tests the length of time each MRF takes to converge to a distribution within the given delta
+    for both Gibbs sampling and token sampling. Then outputs this data into a CSV file for data processing.
+    
+    Args:
+        num_cycles: The number of cycles of testing to perform (on each cycle the CPT table gets re-randomized)
+        tests_per_cycle: The number of tests to run for each cycle
+        param_list: A list of the differently sized Neighborhood MRF's as tuples with form (height, width)
+        domain: The discrete domain the random variables can take
+        target_action: Target action to marginalize
+        target_value: The value we want to find the marginal distribution of for the target_action
+        delta: The delta we want the distributions to converge between
+        sample_period: The number of samples taken at each interval before checking the delta
+        minimum_samples: The minimum number of samples taken before the delta is checked
+
+    """
+    DATA_PATH = "data/param_neighborhood/param_data.csv"
+    
+    mrf_list = [M.MarkovRandomField()] * len(param_list)
+    las_list = [L.LiveAndSafe()] * len(param_list)
+    fmdp_list = [F.FactoredMarkovDecisionProcess()] * len(param_list)
+    
+    # Build MRF, LAS, and FMDP for each tuple in the parameter list
+    for n in range(len(param_list)):
+        width = param_list[n][0]
+        height = param_list[n][1]
+        
+        # Create vertices labeled 0 -> height * width - 1
+        for i in range(0, height * width):
+            mrf_list[n].add_vertex(i, domain)
+        
+        # Create edges
+        for i in range(0, height):
+            for j in range(0, width):
+                # Location of current vertex = [i * width + j]
+                vloc = i * width + j
+                
+                if (j != width - 1): mrf_list[n].add_edge(vloc, vloc + 1)
+                if (i != height - 1): mrf_list[n].add_edge(vloc, vloc + width)
+        
+        # Auto propogate the CPT with random probabilities
+        mrf_list[n].auto_propagate_cpt()
+
+        # Use MRF to add vertices / edges to LAS
+        las_list[n].set_vertices(mrf_list[n].vertices())
+        las_list[n].set_edges(mrf_list[n].edges(), ptr=target_action)
+        
+        # Build FMDP
+        fmdp_list[n].set_actions(mrf_list[n].vertices())
+        fmdp_list[n].set_edges(las_list[n].get_edges())
+        fmdp_list[n].set_components(las_list[n].get_tokens())
+        fmdp_list[n].set_domains(mrf_list[n].get_domains())
+        fmdp_list[n].set_cpts(mrf_list[n].get_cpts())
+        fmdp_list[n].set_random_values()
+        
+    # DF for test data
+    param_df = pd.read_csv(DATA_PATH)
+    
+    gibbs_samping = "Gibbs"
+    token_sampling = "Token"
+
+    # Track number of cycles
+    cycles = 0
+    meta_cycle = 0
+    if(len(param_df) > 0):
+        meta_cycle = param_df['cycle'].iloc[-1] + 1
+        
+    # Track total test running time
+    total_start_time = time.perf_counter()
+
+    while(cycles < num_cycles):
+        print(f"Running cycle: {cycles + 1}")
+        
+        # Re-randomize CPTs for each MRF
+        for mrf, fmdp in zip(mrf_list, fmdp_list):
+            mrf.auto_propagate_cpt()
+            fmdp.set_cpts(mrf.get_cpts())
+
+        # Track number of tests
+        tests = 0
+
+        while(tests < tests_per_cycle):
+            # Test for speed / accuracy for each value in num_samples
+            for fmdp in fmdp_list:  
+                # Estimating gibbs sampling marginal probability that P(target_action == target_value)
+                gibbs_prob, gibbs_time_elapsed = fmdp.gibbs_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
+
+                # Testing token sampling marginal probability that P(target_action == target_value)
+                token_prob, token_time_elapsed = fmdp.token_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
+
+                # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,estimated_distribution]
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{token_prob}']
+
+            tests += 1
+            print(f"Finished test {tests}")
+        
+        print("\n")
+        cycles += 1
+        meta_cycle += 1
+
+    param_df.to_csv(DATA_PATH, index=False, header=True)
     
     total_end_time = time.perf_counter()
     total_time = total_end_time - total_start_time

@@ -352,10 +352,57 @@ class FactoredMarkovDecisionProcess:
                     samples[values] = 1
                 
         return samples
-    
-    def marginal_distribution_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None) -> float:
+
+    def joint_distribution_to_marginal_probability(self, joint_distribution: Dict[tuple, int], action: int, value: int) -> float:
         """
-        Estimate the joint distribution by using gibbs sampling,
+        Returns the marginal probability of the action given the joint distribution
+
+        Args:
+            joint_distribution: The joint distribution as a Dict[tuple, int]
+            action: The action we are marginalizing 
+            value: The value of the action we want to know the probability of
+
+        Returns:
+            float: The probability the action has the given value
+        """
+        num_samples = 0
+        sum = 0
+
+        # Iterate through every combination of the joint distribution
+        for key, v in joint_distribution.items():
+            sum += v * (key[action] == value)   # Add to the sum iff the value is what we are looking for
+            num_samples += v
+
+        return sum / num_samples 
+    
+    def gibbs_sampling(self, action: int, value: int, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> float:
+        """
+        Returns the marginal distribution
+
+        Args:
+            action (int): The action we are marginalizing 
+            value (int): The action we are marginalizing 
+            num_samples: The number of samples to use for distribution
+            burn_in: The number of samples to burn before sampling
+            time_limit: If positive, limits the sampling based on time rather than the number of samples (in seconds)
+            initial_config: Initial global configuration
+
+        Returns:
+            marginal distribution (float): The estimated probability that the action has the given value
+            run time (float): The total running time of this function
+        """
+        start = time.perf_counter()
+        
+        joint_distribution = self.joint_distribution(action_samples=action_samples, burn_in=burn_in, time_limit=time_limit, initial_config=initial_config)
+        
+        end = time.perf_counter()
+        run_time = end - start
+        
+        return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value), run_time
+
+    def gibbs_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None) -> float:
+        """
+        Estimate the marginal distribution by using gibbs sampling,
         keeping track of the number of times each global state is observed
         Picks an arbitrary fixed activation sequence
 
@@ -373,8 +420,7 @@ class FactoredMarkovDecisionProcess:
             initial_config: Initial global configuration
 
         Returns:
-            joint distribution as a dictionary:
-                values(x1, x2, ... xn) : # of times this global state has been observed
+            estimate of the marginal distribution as a float
             total running time as a float
 
         """
@@ -431,53 +477,6 @@ class FactoredMarkovDecisionProcess:
         run_time = end - start
         
         return d2, run_time
-
-    def joint_distribution_to_marginal_probability(self, joint_distribution: Dict[tuple, int], action: int, value: int) -> float:
-        """
-        Returns the marginal probability of the action given the joint distribution
-
-        Args:
-            joint_distribution: The joint distribution as a Dict[tuple, int]
-            action: The action we are marginalizing 
-            value: The value of the action we want to know the probability of
-
-        Returns:
-            float: The probability the action has the given value
-        """
-        num_samples = 0
-        sum = 0
-
-        # Iterate through every combination of the joint distribution
-        for key, v in joint_distribution.items():
-            sum += v * (key[action] == value)   # Add to the sum iff the value is what we are looking for
-            num_samples += v
-
-        return sum / num_samples 
-    
-    def gibbs_sampling(self, action: int, value: int, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1, initial_config: Dict[int, int] = None) -> float:
-        """
-        Returns the marginal distribution
-
-        Args:
-            action (int): The action we are marginalizing 
-            value (int): The action we are marginalizing 
-            num_samples: The number of samples to use for distribution
-            burn_in: The number of samples to burn before sampling
-            time_limit: If positive, limits the sampling based on time rather than the number of samples (in seconds)
-            initial_config: Initial global configuration
-
-        Returns:
-            marginal distribution (float): The estimated probability that the action has the given value
-            run time (float): The total running time of this function
-        """
-        start = time.perf_counter()
-        
-        joint_distribution = self.joint_distribution(action_samples=action_samples, burn_in=burn_in, time_limit=time_limit, initial_config=initial_config)
-        
-        end = time.perf_counter()
-        run_time = end - start
-        
-        return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value), run_time
 
     def token_sampling(self, target_action: int, target_value: int, action_samples: int = 1000, burn_in: int = 100, time_limit: int = -1) -> float:
         """
@@ -573,3 +572,78 @@ class FactoredMarkovDecisionProcess:
         run_time = end - start
             
         return count / (sample_count - burn_in), run_time
+    
+    def token_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None) -> float:
+        """
+        Estimate the marginal distribution by using token sampling
+
+        This function takes the marginal distribution every sample period # of samples, then
+        compares it to the previous sampling period. If the difference between these
+        two samples is less than the delta value, it will return this distribution.
+
+        Args:
+            target_action: The action we want to marginalize
+            target_value: The value of the action we want to marginalize for P(target_action == target_value)
+            delta: The difference required between samples to return the distribution
+            sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
+            minimum_samples: The minimum amount of samples required
+            initial_config: Initial global configuration
+
+        Returns:
+            marginalized distribution as a float
+            total running time as a float
+
+        """
+        start = time.perf_counter()
+        
+        if(initial_config):
+            self._values = initial_config
+
+        activation_order = self.derive_activation(target_action)
+        order_length = len(activation_order)
+
+        count = 0
+        current_config = self._values.copy()
+        
+        # Our two distributions we will compare the delta
+        d1 = 0.0
+        d2 = 1.0
+
+        # Tuple of all values where each index represents the value for its respective action
+        max_key = max(current_config.keys())
+        values = tuple(current_config[i] for i in range(max_key + 1))
+
+        sample_count = 0
+            
+        while(abs(d1 - d2) > delta or sample_count < minimum_samples):
+            action = activation_order[sample_count % order_length]
+            
+            # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+            neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+            for a in self._edges[action]:
+                neighbor_set.add((a, int(current_config[a])))
+
+            probabilities = self._cpts[action][frozenset(neighbor_set)]
+            domains, probs = zip(*probabilities.items())
+            value = np.random.choice(domains, p=probs)
+
+            # Convert values to list, mutate, then convert back to tuple
+            current_config[action] = value
+            value_list = list(values)
+            value_list[action] = value
+            values = tuple(value_list)
+
+            # Add to count iff target_action == target_value
+            count += (current_config[target_action] == target_value) 
+            
+            sample_count += 1
+
+            # Check if we are at a new sample period
+            if(sample_count % sample_period == 0):
+                d1 = d2
+                d2 = count / sample_count
+        
+        end = time.perf_counter()
+        run_time = end - start
+        
+        return d2, run_time
