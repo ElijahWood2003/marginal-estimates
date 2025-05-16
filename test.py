@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
+GROUND_PATH = "data/4x3_neighborhood/ground_truth_data.csv"
+TIME_PATH = "data/4x3_neighborhood/set_time_data.csv"
+SAMPLES_PATH = "data/4x3_neighborhood/set_samples_data.csv"
+
 def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, delta: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
     """
     Run tests to track the accuracy and speed of estimating marginal distributions for
@@ -28,9 +32,9 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         None
     """
     # DF for test data
-    samples_df = pd.read_csv("data/set_samples_data.csv")
-    time_df = pd.read_csv("data/set_time_data.csv")
-    ground_df = pd.read_csv("data/ground_truth_data.csv")
+    samples_df = pd.read_csv(SAMPLES_PATH)
+    time_df = pd.read_csv(TIME_PATH)
+    ground_df = pd.read_csv(GROUND_PATH)
     
     gibbs_samping = "Gibbs"
     token_sampling = "Token"
@@ -93,9 +97,9 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
         cycles += 1
         meta_cycle += 1
 
-    samples_df.to_csv("data/set_samples_data.csv", index=False, header=True)
-    time_df.to_csv("data/set_time_data.csv", index=False, header=True)
-    ground_df.to_csv("data/ground_truth_data.csv", index=False, header=True)
+    samples_df.to_csv(SAMPLES_PATH, index=False, header=True)
+    time_df.to_csv(TIME_PATH, index=False, header=True)
+    ground_df.to_csv(GROUND_PATH, index=False, header=True)
     
     total_end_time = time.perf_counter()
     total_time = total_end_time - total_start_time
@@ -103,14 +107,14 @@ def run_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int]
 
 def graph_samples_data(samples_list: list[int]):
     # Load the data with explicit numeric conversion
-    ground_truth = pd.read_csv('data/ground_truth_data.csv', dtype={
+    ground_truth = pd.read_csv(GROUND_PATH, dtype={
         'cycle': int,
         'time_elapsed': float,
         'delta': float,
         'estimated_distribution': float
     })
 
-    set_samples_data = pd.read_csv('data/set_samples_data.csv', dtype={
+    set_samples_data = pd.read_csv(SAMPLES_PATH, dtype={
         'cycle': int,
         'sample_type': str,
         'num_samples': int,
@@ -170,14 +174,14 @@ def graph_samples_data(samples_list: list[int]):
 
 def graph_time_data(time_trials: list[int]):
     # Load the data with explicit numeric conversion
-    ground_truth = pd.read_csv('data/ground_truth_data.csv', dtype={
+    ground_truth = pd.read_csv(GROUND_PATH, dtype={
         'cycle': int,
         'time_elapsed': float,
         'delta': float,
         'estimated_distribution': float
     })
 
-    set_time_data = pd.read_csv('data/set_time_data.csv', dtype={
+    set_time_data = pd.read_csv(TIME_PATH, dtype={
         'cycle': int,
         'sample_type': str,
         'set_time': int,
