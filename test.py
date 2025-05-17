@@ -68,7 +68,7 @@ def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[
         tests = 0
 
         while(tests < tests_per_cycle):
-            print(f"Running test: {tests}/{tests_per_cycle}")
+            print(f"Running test: {tests + 1}/{tests_per_cycle}")
             
             # Test for speed / accuracy for each value in num_samples
             for action_samples in num_samples_list:  
@@ -196,7 +196,7 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
         tests = 0
 
         while(tests < tests_per_cycle):
-            print(f"Running test: {tests}/{tests_per_cycle}")
+            print(f"Running test: {tests + 1}/{tests_per_cycle}")
             
             # Test for speed / accuracy for each value in num_samples
             for fmdp, param, sample_period in zip(fmdp_list, param_list, sample_period_list):
