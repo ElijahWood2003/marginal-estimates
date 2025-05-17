@@ -639,7 +639,7 @@ class FactoredMarkovDecisionProcess:
             sample_count += 1
 
             # Check if we are at a new sample period
-            if(sample_count % sample_period == 0):
+            if(sample_count % sample_period == 0 and sample_count >= minimum_samples - sample_period):
                 d1 = d2
                 d2 = count / sample_count
         

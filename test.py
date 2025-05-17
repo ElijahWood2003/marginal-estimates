@@ -129,14 +129,16 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
     """
     DATA_PATH = "data/param_neighborhood/param_data.csv"
     
-    mrf_list = [M.MarkovRandomField()] * len(param_list)
-    las_list = [L.LiveAndSafe()] * len(param_list)
-    fmdp_list = [F.FactoredMarkovDecisionProcess()] * len(param_list)
+    mrf_list = [None] * len(param_list)
+    las_list = [None] * len(param_list)
+    fmdp_list = [None] * len(param_list)
     
     # Build MRF, LAS, and FMDP for each tuple in the parameter list
     for n in range(len(param_list)):
         width = param_list[n][0]
         height = param_list[n][1]
+        
+        mrf_list[n] = M.MarkovRandomField()
         
         # Create vertices labeled 0 -> height * width - 1
         for i in range(0, height * width):
@@ -155,10 +157,12 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
         mrf_list[n].auto_propagate_cpt()
 
         # Use MRF to add vertices / edges to LAS
+        las_list[n] = L.LiveAndSafe()
         las_list[n].set_vertices(mrf_list[n].vertices())
         las_list[n].set_edges(mrf_list[n].edges(), ptr=target_action)
         
         # Build FMDP
+        fmdp_list[n] = F.FactoredMarkovDecisionProcess()
         fmdp_list[n].set_actions(mrf_list[n].vertices())
         fmdp_list[n].set_edges(las_list[n].get_edges())
         fmdp_list[n].set_components(las_list[n].get_tokens())
@@ -194,16 +198,18 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
 
         while(tests < tests_per_cycle):
             # Test for speed / accuracy for each value in num_samples
-            for fmdp in fmdp_list:  
+            for fmdp, param in zip(fmdp_list, param_list):
+                parameter = f"{param[0]}x{param[1]}"
+                
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
                 gibbs_prob, gibbs_time_elapsed = fmdp.gibbs_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
 
                 # Testing token sampling marginal probability that P(target_action == target_value)
                 token_prob, token_time_elapsed = fmdp.token_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
 
-                # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,estimated_distribution]
-                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{gibbs_prob}']
-                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{token_prob}']
+                # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,parameter,delta,sample_period,estimated_distribution]
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{gibbs_prob}']
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{token_prob}']
 
             tests += 1
             print(f"Finished test {tests}")

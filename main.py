@@ -4,11 +4,14 @@ import classes.LAS as L
 import classes.FMDP as F
 import test
 
-# TODO: Run tests on (10, 10), (20, 20), (50, 50) MRF Example based on set deltas
-# TODO: Parameterize the MRF creation
+# TODO: Add sample period to param data csv
 
 def test_4x3():
-        # Binary 4x3-Neighborhood MRF Example
+    """
+    Binary 4x3-Neighborhood MRF Example.
+    Output goes to data files.
+    Includes graphing functions at bottom.
+    """
     # Initialize MRF
     MRF = M.MarkovRandomField()
     domain = [0, 1]
@@ -72,15 +75,21 @@ def test_4x3():
 # test_4x3()
 
 def test_param():
+    """
+    Parameterized neighborhood MRF example.
+    Dimensions given as a list of tuples in param_list.
+    Output goes to data files.
+    """
+    # Varibles for testing
     num_cycles = 1
-    tests_per_cycle = 3
+    tests_per_cycle = 1
     param_list = [(10, 10), (20, 20), (50, 50)]
     domain = [0, 1]
     target_action = 0
     target_value = 0
-    delta = 0.01
-    sample_period = 500000
-    minimum_samples = 10000000
+    delta = 0.001
+    sample_period = 2500000
+    minimum_samples = 2500000
     test.run_param_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
 
 test_param()
