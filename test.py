@@ -1,4 +1,4 @@
-### Run tests on examples and output results to a csv file for analysis
+### Run tests on examples and output results to data for analysis
 import classes.MRF as M
 import classes.LAS as L
 import classes.FMDP as F
@@ -8,11 +8,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
+# File paths
 GROUND_PATH = "data/4x3_neighborhood/ground_truth_data.csv"
 TIME_PATH = "data/4x3_neighborhood/set_time_data.csv"
 SAMPLES_PATH = "data/4x3_neighborhood/set_samples_data.csv"
+PARAM_PATH = "data/param_neighborhood/param_data.csv"
 
-def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, delta: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess) -> None:
+def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[int], time_trials: list[int], target_action: int, target_value: int, delta: int, MRF: M.MarkovRandomField, LAS: L.LiveAndSafe, FMDP: F.FactoredMarkovDecisionProcess, minimum_samples: int = 30000000) -> None:
     """
     Run tests to track the accuracy and speed of estimating marginal distributions for
     gibbs sampling versus token sampling
@@ -49,13 +51,11 @@ def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[
     total_start_time = time.perf_counter()
 
     while(cycles < num_cycles):
-        print(f"Running cycle: {cycles + 1}")
+        print(f"Running cycle: {cycles + 1}/{num_cycles}")
         
         # Randomize CPT table for each new cycle
         MRF.auto_propagate_cpt()
         FMDP.set_cpts(MRF.get_cpts())
-        
-        minimum_samples = 30000000
         
         # Finding the ground truth (1 ground truth per cycle)
         ground_truth_prob, ground_truth_time = FMDP.gibbs_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, minimum_samples=minimum_samples)
@@ -68,6 +68,8 @@ def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[
         tests = 0
 
         while(tests < tests_per_cycle):
+            print(f"Running test: {tests}/{tests_per_cycle}")
+            
             # Test for speed / accuracy for each value in num_samples
             for action_samples in num_samples_list:  
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
@@ -93,7 +95,6 @@ def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[
                 time_df.loc[len(time_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{time_trial}', f'{token_prob}']
 
             tests += 1
-            print(f"Finished test {tests}")
         
         print("\n")
         cycles += 1
@@ -107,7 +108,7 @@ def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[
     total_time = total_end_time - total_start_time
     print(f"Finished running tests. Total run time: {total_time} \n")
 
-def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tuple], domain: list[int], target_action: int, target_value: int, delta: float, sample_period: int, minimum_samples: int) -> None:
+def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tuple], domain: list[int], target_action: int, target_value: int, delta: float, sample_period_list: list[int], minimum_samples: int) -> None:
     """
     Parameterized MRF tests which can take any # of (width, height) tuples
     and build width * height neighborhood MRF's to run tests on.
@@ -123,12 +124,10 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
         target_action: Target action to marginalize
         target_value: The value we want to find the marginal distribution of for the target_action
         delta: The delta we want the distributions to converge between
-        sample_period: The number of samples taken at each interval before checking the delta
+        sample_period_list: The number of samples taken at each interval before checking the delta (per parameter)
         minimum_samples: The minimum number of samples taken before the delta is checked
 
     """
-    DATA_PATH = "data/param_neighborhood/param_data.csv"
-    
     mrf_list = [None] * len(param_list)
     las_list = [None] * len(param_list)
     fmdp_list = [None] * len(param_list)
@@ -171,7 +170,7 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
         fmdp_list[n].set_random_values()
         
     # DF for test data
-    param_df = pd.read_csv(DATA_PATH)
+    param_df = pd.read_csv(PARAM_PATH)
     
     gibbs_samping = "Gibbs"
     token_sampling = "Token"
@@ -186,7 +185,7 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
     total_start_time = time.perf_counter()
 
     while(cycles < num_cycles):
-        print(f"Running cycle: {cycles + 1}")
+        print(f"Running cycle: {cycles + 1}/{num_cycles}")
         
         # Re-randomize CPTs for each MRF
         for mrf, fmdp in zip(mrf_list, fmdp_list):
@@ -197,28 +196,29 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
         tests = 0
 
         while(tests < tests_per_cycle):
+            print(f"Running test: {tests}/{tests_per_cycle}")
+            
             # Test for speed / accuracy for each value in num_samples
-            for fmdp, param in zip(fmdp_list, param_list):
+            for fmdp, param, sample_period in zip(fmdp_list, param_list, sample_period_list):
                 parameter = f"{param[0]}x{param[1]}"
                 
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
-                gibbs_prob, gibbs_time_elapsed = fmdp.gibbs_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
+                gibbs_prob, gibbs_time_elapsed = fmdp.gibbs_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=sample_period)
 
                 # Testing token sampling marginal probability that P(target_action == target_value)
-                token_prob, token_time_elapsed = fmdp.token_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
+                token_prob, token_time_elapsed = fmdp.token_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=sample_period)
 
                 # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,parameter,delta,sample_period,estimated_distribution]
                 param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{gibbs_prob}']
                 param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{token_prob}']
 
             tests += 1
-            print(f"Finished test {tests}")
         
         print("\n")
         cycles += 1
         meta_cycle += 1
 
-    param_df.to_csv(DATA_PATH, index=False, header=True)
+    param_df.to_csv(PARAM_PATH, index=False, header=True)
     
     total_end_time = time.perf_counter()
     total_time = total_end_time - total_start_time
@@ -356,3 +356,36 @@ def graph_time_data(time_trials: list[int]):
     plt.savefig(fname="images/set_time.png", dpi=300, bbox_inches='tight')
     plt.close()
     # plt.show()
+    
+def graph_param_data(cycles=None):
+    # Read and process the data
+    df = pd.read_csv(PARAM_PATH)
+    if cycles is not None:
+        df = df[df['cycle'].isin(cycles)]
+    averaged_df = df.groupby(['parameter', 'sample_type'])['time_elapsed'].mean().reset_index()
+
+    # Pivot the data for grouped bar plotting
+    pivot_df = averaged_df.pivot(index='parameter', columns='sample_type', values='time_elapsed')
+
+    # Plotting
+    ax = pivot_df.plot(kind='bar', figsize=(10, 6), color=['skyblue', 'salmon'], width=0.8)
+    
+    # Customize the plot
+    plt.title('Average Time Elapsed by Parameter and Sample Type', fontsize=14)
+    plt.xlabel('Parameter (Grid Size)', fontsize=12)
+    plt.ylabel('Average Time Elapsed (seconds)', fontsize=12)
+    plt.xticks(rotation=0)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.legend(title='Sample Type')
+    
+    # Display values on top of bars
+    for p in ax.patches:
+        ax.annotate(f"{p.get_height():.1f}", 
+                    (p.get_x() + p.get_width() / 2., p.get_height()), 
+                    ha='center', va='center', 
+                    xytext=(0, 5), 
+                    textcoords='offset points')
+    
+    plt.tight_layout()
+    plt.savefig(fname="images/param_test.png", dpi=300, bbox_inches='tight')
+    plt.close()

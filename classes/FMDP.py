@@ -199,16 +199,16 @@ class FactoredMarkovDecisionProcess:
                 
         return samples
 
-    def derive_activation(self, initial_action: int) -> List[int]:
+    def derive_activation(self, target_action: int) -> List[int]:
         """
         Run BFS to derive depths of all actions
         Then output as a list the desired sequence
         
-        Derives the activation sequence to maximize the activations of the initial action
+        Derives the activation sequence to maximize the activations of the target action
         while minimizing the number of total activations
 
         Args:
-            initial_action: First action (acyclic orientation 
+            target_action: First action (acyclic orientation 
                 of the tokens should be pointing towards this action)
 
         Returns:
@@ -217,11 +217,11 @@ class FactoredMarkovDecisionProcess:
         depth = {}          # Dictionary to track depths for each action
         depth_list = []     # Depth list to use for activation sequence
         
-        depth[initial_action] = 0
-        depth_list.append([initial_action])
+        depth[target_action] = 0
+        depth_list.append([target_action])
         
         queue = []
-        queue.append(initial_action)
+        queue.append(target_action)
         
         while(queue):
             s = queue.pop(0)
