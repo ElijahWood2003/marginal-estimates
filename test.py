@@ -387,5 +387,6 @@ def graph_param_data(cycles=None):
                     textcoords='offset points')
     
     plt.tight_layout()
+    # plt.show()
     plt.savefig(fname="images/param_test.png", dpi=300, bbox_inches='tight')
     plt.close()
