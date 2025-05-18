@@ -81,16 +81,19 @@ def test_param():
     Output goes to data files.
     """
     # Varibles for testing
-    num_cycles = 5
+    num_cycles = 1
     tests_per_cycle = 5
     param_list = [(10, 10), (20, 20), (50, 50)]
     domain = [0, 1]
     target_action = 0
     target_value = 0
-    delta = 0.001
-    sample_period_list = [750000, 1500000, 2000000]
-    minimum_samples = 2500000
-    test.run_param_tests(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta=delta, sample_period_list=sample_period_list, minimum_samples=minimum_samples)
+    delta = [0.0001, 0.0001, 0.001]
+    gt_delta = [0.0001, 0.0001, 0.0001]
+    gt_min_samples = [50000000, 75000000, 100000000]    # 50m, 75m, 100m
+    gt_sample_period = [1000000, 1500000, 2500000]
+    # sample_period_list = [750000, 1500000, 2000000]
+    # minimum_samples = 2500000
+    test.run_param_tests_ground_truth(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta=delta, gt_delta=gt_delta, gt_min_samples=gt_min_samples, gt_sample_period=gt_sample_period)
 
 test_param()
 # test.graph_param_data()

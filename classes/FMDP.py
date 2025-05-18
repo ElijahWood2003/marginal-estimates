@@ -400,7 +400,7 @@ class FactoredMarkovDecisionProcess:
         
         return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value), run_time
 
-    def gibbs_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None) -> float:
+    def gibbs_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1) -> float:
         """
         Estimate the marginal distribution by using gibbs sampling,
         keeping track of the number of times each global state is observed
@@ -418,6 +418,7 @@ class FactoredMarkovDecisionProcess:
             sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
             minimum_samples: The minimum amount of samples required
             initial_config: Initial global configuration
+            ground_truth: Optional, if > 0 the function checks based on ground truth distribution rather than sample period
 
         Returns:
             estimate of the marginal distribution as a float
@@ -445,33 +446,65 @@ class FactoredMarkovDecisionProcess:
 
         sample_count = 0
             
-        while(abs(d1 - d2) > delta or sample_count < minimum_samples):
-            action = activation_order[sample_count % order_length]
+        if(ground_truth <= 0):
+            while(abs(d1 - d2) > delta or sample_count < minimum_samples):
+                action = activation_order[sample_count % order_length]
+                
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
+
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
+
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                value_list = list(values)
+                value_list[action] = value
+                values = tuple(value_list)
+
+                # Add to count iff target_action == target_value
+                count += (current_config[target_action] == target_value) 
+                
+                sample_count += 1
+
+                # Check if we are at a new sample period
+                if(sample_count % sample_period == 0):
+                    d1 = d2
+                    d2 = count / sample_count
+        else:
+            # Sample period = len(activation_order); we want to check everytime we cycle through activations
+            sample_period = len(activation_order)
             
-            # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
-            neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
-            for a in self._edges[action]:
-                neighbor_set.add((a, int(current_config[a])))
+            # If ground_truth > 0 then we want to compare abs(current distribution - ground_truth) < delta
+            while(abs(d2 - ground_truth) > delta):
+                action = activation_order[sample_count % order_length]
+                
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
 
-            probabilities = self._cpts[action][frozenset(neighbor_set)]
-            domains, probs = zip(*probabilities.items())
-            value = np.random.choice(domains, p=probs)
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
 
-            # Convert values to list, mutate, then convert back to tuple
-            current_config[action] = value
-            value_list = list(values)
-            value_list[action] = value
-            values = tuple(value_list)
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                value_list = list(values)
+                value_list[action] = value
+                values = tuple(value_list)
 
-            # Add to count iff target_action == target_value
-            count += (current_config[target_action] == target_value) 
-            
-            sample_count += 1
+                # Add to count iff target_action == target_value
+                count += (current_config[target_action] == target_value) 
+                
+                sample_count += 1
 
-            # Check if we are at a new sample period
-            if(sample_count % sample_period == 0):
-                d1 = d2
-                d2 = count / sample_count
+                # Set d1 when we have cycled through entire activation sequence
+                if(sample_count % sample_period == 0):
+                    d2 = count / sample_count
         
         end = time.perf_counter()
         run_time = end - start
@@ -573,7 +606,7 @@ class FactoredMarkovDecisionProcess:
             
         return count / (sample_count - burn_in), run_time
     
-    def token_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None) -> float:
+    def token_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1) -> float:
         """
         Estimate the marginal distribution by using token sampling
 
@@ -588,6 +621,7 @@ class FactoredMarkovDecisionProcess:
             sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
             minimum_samples: The minimum amount of samples required
             initial_config: Initial global configuration
+            ground_truth: Optional, if > 0 the function checks based on ground truth distribution rather than sample period
 
         Returns:
             marginalized distribution as a float
@@ -614,36 +648,177 @@ class FactoredMarkovDecisionProcess:
         values = tuple(current_config[i] for i in range(max_key + 1))
 
         sample_count = 0
+        
+        if(ground_truth <= 0):
+            while(abs(d1 - d2) > delta or sample_count < minimum_samples):
+                action = activation_order[sample_count % order_length]
+                
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
+
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
+
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                value_list = list(values)
+                value_list[action] = value
+                values = tuple(value_list)
+
+                # Add to count iff target_action == target_value
+                count += (current_config[target_action] == target_value) 
+                
+                sample_count += 1
+
+                # Check if we are at a new sample period
+                if(sample_count % sample_period == 0 and sample_count >= minimum_samples - sample_period):
+                    d1 = d2
+                    d2 = count / sample_count
+        else:
+            # Sample period = len(activation_order); we want to check everytime we cycle through activations
+            sample_period = len(activation_order)
             
-        while(abs(d1 - d2) > delta or sample_count < minimum_samples):
-            action = activation_order[sample_count % order_length]
-            
-            # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
-            neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
-            for a in self._edges[action]:
-                neighbor_set.add((a, int(current_config[a])))
+            # If ground_truth > 0 then we want to compare abs(current distribution - ground_truth) < delta
+            while(abs(d2 - ground_truth) > delta):
+                action = activation_order[sample_count % order_length]
+                
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
 
-            probabilities = self._cpts[action][frozenset(neighbor_set)]
-            domains, probs = zip(*probabilities.items())
-            value = np.random.choice(domains, p=probs)
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
 
-            # Convert values to list, mutate, then convert back to tuple
-            current_config[action] = value
-            value_list = list(values)
-            value_list[action] = value
-            values = tuple(value_list)
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                value_list = list(values)
+                value_list[action] = value
+                values = tuple(value_list)
 
-            # Add to count iff target_action == target_value
-            count += (current_config[target_action] == target_value) 
-            
-            sample_count += 1
+                # Add to count iff target_action == target_value
+                count += (current_config[target_action] == target_value) 
+                
+                sample_count += 1
 
-            # Check if we are at a new sample period
-            if(sample_count % sample_period == 0 and sample_count >= minimum_samples - sample_period):
-                d1 = d2
-                d2 = count / sample_count
+                # Set d1 when we have cycled through entire activation sequence
+                if(sample_count % sample_period == 0):
+                    d2 = count / sample_count
         
         end = time.perf_counter()
         run_time = end - start
         
         return d2, run_time
+    
+
+    def delta_sampling(self, activation_order: list[int], target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1) -> float:
+        """
+        Estimate the marginal distribution against delta given the activation sequence.
+
+        This function takes the marginal distribution every sample period # of samples, then
+        compares it to the previous sampling period. If the difference between these
+        two samples is less than the delta value, it will return this distribution.
+
+        Args:
+            activation_order: The order of actions to activate while sampling
+            target_action: The action we want to marginalize
+            target_value: The value of the action we want to marginalize for P(target_action == target_value)
+            delta: The difference required between samples to return the distribution
+            sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
+            minimum_samples: The minimum amount of samples required
+            initial_config: Initial global configuration
+            ground_truth: Optional, if > 0 the function checks based on ground truth distribution rather than sample period
+
+        Returns:
+            marginalized distribution as a float
+            total running time as a float
+
+        """
+        start = time.perf_counter()
+        
+        if(initial_config):
+            self._values = initial_config
+
+        order_length = len(activation_order)
+
+        count = 0
+        current_config = self._values.copy()
+        
+        # Our two distributions we will compare the delta
+        d1 = 0.0
+        d2 = 1.0
+
+        # Tuple of all values where each index represents the value for its respective action
+        max_key = max(current_config.keys())
+        values = tuple(current_config[i] for i in range(max_key + 1))
+
+        sample_count = 0
+        
+        if(ground_truth <= 0):
+            while(abs(d1 - d2) > delta or sample_count < minimum_samples):
+                action = activation_order[sample_count % order_length]
+                
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
+
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
+
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                value_list = list(values)
+                value_list[action] = value
+                values = tuple(value_list)
+
+                # Add to count iff target_action == target_value
+                count += (current_config[target_action] == target_value) 
+                
+                sample_count += 1
+
+                # Check if we are at a new sample period
+                if(sample_count % sample_period == 0 and sample_count >= minimum_samples - sample_period):
+                    d1 = d2
+                    d2 = count / sample_count
+        else:
+            # Sample period = len(activation_order); we want to check everytime we cycle through activations
+            sample_period = order_length
+            
+            # If ground_truth > 0 then we want to compare abs(current distribution - ground_truth) < delta
+            while(abs(d2 - ground_truth) > delta):
+                action = activation_order[sample_count % order_length]
+                
+                # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
+                neighbor_set = set()        # a set of tuples (neighbor1, value1) we will inject into cpt
+                for a in self._edges[action]:
+                    neighbor_set.add((a, int(current_config[a])))
+
+                probabilities = self._cpts[action][frozenset(neighbor_set)]
+                domains, probs = zip(*probabilities.items())
+                value = np.random.choice(domains, p=probs)
+
+                # Convert values to list, mutate, then convert back to tuple
+                current_config[action] = value
+                value_list = list(values)
+                value_list[action] = value
+                values = tuple(value_list)
+
+                # Add to count iff target_action == target_value
+                count += (current_config[target_action] == target_value) 
+                
+                sample_count += 1
+
+                # Set d1 when we have cycled through entire activation sequence
+                if(sample_count % sample_period == 0):
+                    d2 = count / sample_count
+        
+        end = time.perf_counter()
+        run_time = end - start
+        
+        return d2, run_time, sample_count
