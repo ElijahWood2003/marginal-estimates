@@ -715,7 +715,7 @@ class FactoredMarkovDecisionProcess:
         return d2, run_time
     
 
-    def delta_sampling(self, activation_order: list[int], target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1) -> float:
+    def delta_sampling(self, activation_order: list[int], target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, max_samples: int = 150000000, ground_truth: float = -1) -> float:
         """
         Estimate the marginal distribution against delta given the activation sequence.
 
@@ -730,8 +730,9 @@ class FactoredMarkovDecisionProcess:
             delta: The difference required between samples to return the distribution
             sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
             minimum_samples: The minimum amount of samples required
-            initial_config: Initial global configuration
-            ground_truth: Optional, if > 0 the function checks based on ground truth distribution rather than sample period
+            initial_config: Optional, initial global configuration
+            max_samples: A cap on the number of samples if the function is using ground_truth
+            ground_truth: Optional, if ground_truth > 0 the function checks based on ground truth distribution rather than sample period
 
         Returns:
             marginalized distribution as a float
@@ -817,6 +818,9 @@ class FactoredMarkovDecisionProcess:
                 # Set d1 when we have cycled through entire activation sequence
                 if(sample_count % sample_period == 0):
                     d2 = count / sample_count
+                    if(sample_count > max_samples):
+                        print("Max samples reached")
+                        break
         
         end = time.perf_counter()
         run_time = end - start

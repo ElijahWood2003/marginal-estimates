@@ -307,7 +307,7 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
     while(cycles < num_cycles):
         print(f"Running cycle: {cycles + 1}/{num_cycles}")
         
-        ground_truth = [0, 0, 0]
+        ground_truth = [0] * len(param_list)
         i = 0
         
         # Re-randomize CPTs for each MRF
@@ -351,6 +351,7 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
 
                 i += 1
                 
+            param_df.to_csv(PARAM_PATH, index=False, header=True)
             tests += 1
         
         print("\n")
