@@ -92,7 +92,7 @@ def test_param():
     target_value = 0
     delta_list = [0.00001, 0.0001, 0.001]
     gt_delta = [0.0001, 0.0001, 0.0001]
-    gt_min_samples = [50000000, 75000000, 100000000]    # 50m, 75m, 100m
+    gt_min_samples = [50000000, 50000000, 60000000]    # 50m, 75m, 100m
     gt_sample_period = [1000000, 1500000, 2500000]
     # sample_period_list = [750000, 1500000, 2000000]
     # minimum_samples = 2500000

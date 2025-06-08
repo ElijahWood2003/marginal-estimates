@@ -400,6 +400,7 @@ class FactoredMarkovDecisionProcess:
         
         return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value), run_time
 
+    # NOTE: Arbitrary method (use sampling_delta)
     def gibbs_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1) -> float:
         """
         Estimate the marginal distribution by using gibbs sampling,
@@ -606,22 +607,25 @@ class FactoredMarkovDecisionProcess:
             
         return count / (sample_count - burn_in), run_time
     
-    def token_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1) -> float:
+    # NOTE: Arbitrary method (use sampling_delta)
+    def token_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, delta_trials: int = 5, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1, ground_truth_trials: int = 5) -> float:
         """
         Estimate the marginal distribution by using token sampling
 
         This function takes the marginal distribution every sample period # of samples, then
-        compares it to the previous sampling period. If the difference between these
-        two samples is less than the delta value, it will return this distribution.
+        compares it to the previous X sampling periods. If the difference between these
+        samples is less than the delta value, it will return this distribution.
 
         Args:
             target_action: The action we want to marginalize
             target_value: The value of the action we want to marginalize for P(target_action == target_value)
             delta: The difference required between samples to return the distribution
+            delta_trials: The # of sampling periods it compares distributions to
             sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
             minimum_samples: The minimum amount of samples required
             initial_config: Initial global configuration
             ground_truth: Optional, if > 0 the function checks based on ground truth distribution rather than sample period
+            ground_truth_delta: If ground truth > 0, this tracks the # of distributions that must be within the delta of the ground_truth
 
         Returns:
             marginalized distribution as a float
@@ -639,10 +643,6 @@ class FactoredMarkovDecisionProcess:
         count = 0
         current_config = self._values.copy()
         
-        # Our two distributions we will compare the delta
-        d1 = 0.0
-        d2 = 1.0
-
         # Tuple of all values where each index represents the value for its respective action
         max_key = max(current_config.keys())
         values = tuple(current_config[i] for i in range(max_key + 1))
@@ -650,7 +650,13 @@ class FactoredMarkovDecisionProcess:
         sample_count = 0
         
         if(ground_truth <= 0):
-            while(abs(d1 - d2) > delta or sample_count < minimum_samples):
+            # Our two distributions we will compare the delta
+            d = [0.0] * delta_trials - 1
+            d.append(1.0)
+            d_val = 0       # This will cycle through 'd'
+            
+            # Checking if all values within d are within the delta for convergence 
+            while((max(d) - min(d)) > delta or sample_count < minimum_samples):
                 action = activation_order[sample_count % order_length]
                 
                 # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
@@ -675,14 +681,20 @@ class FactoredMarkovDecisionProcess:
 
                 # Check if we are at a new sample period
                 if(sample_count % sample_period == 0 and sample_count >= minimum_samples - sample_period):
-                    d1 = d2
-                    d2 = count / sample_count
+                    d[d_val] = count / sample_count
+                    d_val += 1
         else:
+            # Our two distributions we will compare the delta
+            d = [0.0] * ground_truth_trials - 1
+            d.append(1.0)
+            d_val = 0
+            
             # Sample period = len(activation_order); we want to check everytime we cycle through activations
             sample_period = len(activation_order)
             
-            # If ground_truth > 0 then we want to compare abs(current distribution - ground_truth) < delta
-            while(abs(d2 - ground_truth) > delta):
+            # If ground_truth > 0 then we want to check if all values in the last trial# distributions are within the 
+            # delta of the ground_truth
+            while(all(abs(x - ground_truth) > delta for x in d)):
                 action = activation_order[sample_count % order_length]
                 
                 # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
@@ -707,32 +719,40 @@ class FactoredMarkovDecisionProcess:
 
                 # Set d1 when we have cycled through entire activation sequence
                 if(sample_count % sample_period == 0):
-                    d2 = count / sample_count
+                    d[d_val] = count / sample_count
+                    d_val += 1
         
         end = time.perf_counter()
         run_time = end - start
         
-        return d2, run_time
+        # Return the last distribution found and total run time
+        return d[d_val - 1], run_time
     
 
-    def delta_sampling(self, activation_order: list[int], target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, max_samples: int = 150000000, ground_truth: float = -1) -> float:
+    def delta_sampling(self, activation_order: list[int], target_action: int, target_value: int, delta: float = 0.0001, delta_trials: int = 5, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, max_samples: int = 150000000, ground_truth: float = -1, ground_truth_trials: int = 5) -> float:
         """
         Estimate the marginal distribution against delta given the activation sequence.
 
         This function takes the marginal distribution every sample period # of samples, then
-        compares it to the previous sampling period. If the difference between these
-        two samples is less than the delta value, it will return this distribution.
+        compares it to the previous trial # of sampling periods. If the difference between these
+        trial #'s of samples is less than the delta value, it will return this distribution.
+        
+        Optionally, a ground_truth value can be given and then it will compare to that value 
+        rather than between distributions.
 
         Args:
             activation_order: The order of actions to activate while sampling
             target_action: The action we want to marginalize
             target_value: The value of the action we want to marginalize for P(target_action == target_value)
             delta: The difference required between samples to return the distribution
+            delta_trials: The # of sampling periods it compares distributions to
             sample_period: The amount of samples between sampling periods (465000 ~ 5 seconds on Mac)
             minimum_samples: The minimum amount of samples required
             initial_config: Optional, initial global configuration
             max_samples: A cap on the number of samples if the function is using ground_truth
             ground_truth: Optional, if ground_truth > 0 the function checks based on ground truth distribution rather than sample period
+            ground_truth_delta: If ground truth > 0, this tracks the # of distributions that must be within the delta of the ground_truth
+
 
         Returns:
             marginalized distribution as a float
@@ -748,19 +768,20 @@ class FactoredMarkovDecisionProcess:
 
         count = 0
         current_config = self._values.copy()
-        
-        # Our two distributions we will compare the delta
-        d1 = 0.0
-        d2 = 1.0
 
         # Tuple of all values where each index represents the value for its respective action
         max_key = max(current_config.keys())
         values = tuple(current_config[i] for i in range(max_key + 1))
 
         sample_count = 0
+        d_val = 0       # This will cycle through 'd'
         
         if(ground_truth <= 0):
-            while(abs(d1 - d2) > delta or sample_count < minimum_samples):
+            # Our distributions we will compare to the delta
+            d = [0.0] * delta_trials - 1
+            d.append(1.0)
+
+            while((max(d) - min(d)) > delta or sample_count < minimum_samples):
                 action = activation_order[sample_count % order_length]
                 
                 # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
@@ -785,14 +806,16 @@ class FactoredMarkovDecisionProcess:
 
                 # Check if we are at a new sample period
                 if(sample_count % sample_period == 0 and sample_count >= minimum_samples - sample_period):
-                    d1 = d2
-                    d2 = count / sample_count
+                    d[d_val] = count / sample_count
+                    d_val += 1
         else:
-            # Sample period = len(activation_order); we want to check everytime we cycle through activations
-            sample_period = order_length
+            # Our distributions we will compare to the delta
+            d = [0.0] * delta_trials - 1
+            d.append(1.0)
             
-            # If ground_truth > 0 then we want to compare abs(current distribution - ground_truth) < delta
-            while(abs(d2 - ground_truth) > delta):
+            # If ground_truth > 0 then we want to check if all values in the last trial# distributions are within the 
+            # delta of the ground_truth
+            while(all(abs(x - ground_truth) > delta for x in d)):
                 action = activation_order[sample_count % order_length]
                 
                 # CPT: dict(action : dict(fset(tuple(neighbor1, value1), tuple(neighbor2, value2) ...) : dict(action-value : probability))) 
@@ -817,7 +840,9 @@ class FactoredMarkovDecisionProcess:
 
                 # Set d1 when we have cycled through entire activation sequence
                 if(sample_count % sample_period == 0):
-                    d2 = count / sample_count
+                    d[d_val] = count / sample_count
+                    d_val += 1
+
                     if(sample_count > max_samples):
                         print("Max samples reached")
                         break
@@ -825,4 +850,5 @@ class FactoredMarkovDecisionProcess:
         end = time.perf_counter()
         run_time = end - start
         
-        return d2, run_time, sample_count
+        # Return the last distribution sampled
+        return d[d_val - 1], run_time, sample_count

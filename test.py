@@ -317,7 +317,7 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
             
             # Finding the ground truth (1 ground truth per cycle)
             activation_order = np.random.permutation(list(fmdp._actions))
-            ground_truth_prob, ground_truth_time, ground_truth_samples = fmdp.delta_sampling(activation_order=activation_order, target_action=target_action, target_value=target_value, delta=delta, minimum_samples=min_samples)
+            ground_truth_prob, ground_truth_time, ground_truth_samples = fmdp.delta_sampling(activation_order=activation_order, target_action=target_action, sample_period=sample_period, target_value=target_value, delta=delta, minimum_samples=min_samples)
             ground_truth[i] = ground_truth_prob
             i += 1
         
@@ -334,7 +334,7 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
             i = 0
             
             # Test for speed / accuracy for each value in num_samples
-            for fmdp, param, delta, sample_period in zip(fmdp_list, param_list, delta_list, gt_sample_period):
+            for fmdp, param, delta, delta_trials, sample_period in zip(fmdp_list, param_list, delta_list, delta_trials, gt_sample_period):
                 parameter = f"{param[0]}x{param[1]}"
                 
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value) against ground truth delta
@@ -345,9 +345,9 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
                 activation_order = fmdp.derive_activation(target_action)
                 token_prob, token_time_elapsed, token_num_samples = fmdp.delta_sampling(activation_order=activation_order, target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=sample_period, ground_truth=ground_truth[i])
 
-                # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,parameter,delta,sample_period,estimated_distribution]
-                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{gibbs_prob}']
-                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{token_prob}']
+                # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,num_samples,parameter,delta,delta_trials,gt_sample_period,estimated_distribution]
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{gibbs_num_samples}', f'{parameter}', f'{delta}', f'{delta_trials}', f'{sample_period}', f'{gibbs_prob}']
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{token_num_samples}', f'{parameter}', f'{delta}', f'{delta_trials}', f'{sample_period}', f'{token_prob}']
 
                 i += 1
                 
