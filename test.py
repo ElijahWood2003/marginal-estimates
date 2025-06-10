@@ -109,7 +109,7 @@ def run_4x3_tests(num_cycles: int, tests_per_cycle: int, num_samples_list: list[
     total_time = total_end_time - total_start_time
     print(f"Finished running tests. Total run time: {total_time} \n")
 
-def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tuple], domain: list[int], target_action: int, target_value: int, delta: float, sample_period_list: list[int], minimum_samples: int) -> None:
+def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tuple], domain: list[int], target_action: int, target_value: int, delta_list: list[float], delta_trials: int, sample_period_list: list[int], minimum_samples: int, verbose: bool = False) -> None:
     """
     Parameterized MRF tests which can take any # of (width, height) tuples
     and build width * height neighborhood MRF's to run tests on.
@@ -124,9 +124,11 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
         domain: The discrete domain the random variables can take
         target_action: Target action to marginalize
         target_value: The value we want to find the marginal distribution of for the target_action
-        delta: The delta we want the distributions to converge between
+        delta_list: The delta we want the distributions to converge between for each parameter
+        delta_trials: The number of times we want the distributions to converge within delta before acceptance
         sample_period_list: The number of samples taken at each interval before checking the delta (per parameter)
         minimum_samples: The minimum number of samples taken before the delta is checked
+        verbose: When True, outputs additional information during script
 
     """
     mrf_list = [None] * len(param_list)
@@ -200,19 +202,25 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
             print(f"Running test: {tests + 1}/{tests_per_cycle}")
             
             # Test for speed / accuracy for each value in num_samples
-            for fmdp, param, sample_period in zip(fmdp_list, param_list, sample_period_list):
+            for fmdp, param, sample_period, delta in zip(fmdp_list, param_list, sample_period_list, delta_list):
                 parameter = f"{param[0]}x{param[1]}"
                 
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value)
-                gibbs_prob, gibbs_time_elapsed = fmdp.gibbs_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=sample_period)
+                activation_order = np.random.permutation(list(fmdp._actions))
+                gibbs_prob, gibbs_time_elapsed, gibbs_num_samples = fmdp.delta_sampling(target_action=target_action, target_value=target_value, activation_order=activation_order, delta=delta, delta_trials=delta_trials,sample_period=sample_period, minimum_samples=minimum_samples)
 
                 # Testing token sampling marginal probability that P(target_action == target_value)
-                token_prob, token_time_elapsed = fmdp.token_sampling_delta(target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=sample_period)
+                activation_order = fmdp.derive_activation(target_action)
+                token_prob, token_time_elapsed, token_num_samples = fmdp.delta_sampling(target_action=target_action, target_value=target_value, activation_order=activation_order, delta=delta, sample_period=sample_period, minimum_samples=minimum_samples)
 
-                # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,parameter,delta,sample_period,estimated_distribution]
-                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{gibbs_prob}']
-                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{parameter}', f'{delta}', f'{sample_period}', f'{token_prob}']
+                # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,num_samples,parameter,delta,delta_trials,sample_period,estimated_distribution]
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{gibbs_num_samples}', f'{parameter}', f'{delta}', f'{delta_trials}', f'{sample_period}', f'{gibbs_prob}']
+                param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{token_num_samples}', f'{parameter}', f'{delta}', f'{delta_trials}', f'{sample_period}', f'{token_prob}']
 
+                if(verbose):
+                    print(f"Cycle: {cycles}, Gibbs sampling, parameter: {parameter}, gibbs_time_elapsed: {gibbs_time_elapsed}, gibbs_num_samples: {gibbs_num_samples}, gibbs_prob: {gibbs_prob}")
+                    print(f"Cycle: {cycles}, Token sampling, parameter: {parameter}, token_time_elapsed: {token_time_elapsed}, token_num_samples: {token_num_samples}, gibbs_prob: {token_prob}")
+                
             tests += 1
         
         print("\n")
@@ -225,7 +233,7 @@ def run_param_tests(num_cycles: int, tests_per_cycle: int, param_list: list[tupl
     total_time = total_end_time - total_start_time
     print(f"Finished running tests. Total run time: {total_time} \n")
     
-def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_list: list[tuple], domain: list[int], target_action: int, target_value: int, delta_list: list[float], gt_delta: list[float], gt_min_samples: list[int], gt_sample_period: list[int]) -> None:
+def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_list: list[tuple], domain: list[int], target_action: int, target_value: int, delta_list: list[float], delta_trials: int, gt_delta: list[float], gt_min_samples: list[int], gt_sample_period: list[int], verbose: bool = False) -> None:
     """
     Parameterized MRF tests which can take any # of (width, height) tuples
     and build width * height neighborhood MRF's to run tests on.
@@ -242,9 +250,11 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
         target_action: Target action to marginalize
         target_value: The value we want to find the marginal distribution of for the target_action
         delta_list: The delta we want the distributions to converge between for each parameter
+        delta_trials: The number of times we want the distributions to converge within delta before acceptance
         gt_delta: The ground truth delta for each parameter
         gt_min_samples: The ground truth minimum # of samples for each parameter
         gt_sample_period: The ground truth sample period for each parameter
+        verbose: When True, prints much more information regarding tests
 
     """
     mrf_list = [None] * len(param_list)
@@ -324,6 +334,7 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
             # Place ground truth in DF (Shape = [cycle,minimum_samples,sample_period,delta,time_elapsed,parameter,estimated_distribution])
             ground_df.loc[len(ground_df)] = [f'{meta_cycle}', f'{min_samples}', f'{sample_period}', f'{delta}', f'{ground_truth_time}', f'{param[0]}x{param[1]}', f'{ground_truth_prob}']
             print(f"Cycle {cycles}, parameter {param}, ground truth found in {ground_truth_time} with {ground_truth_samples} samples")
+            if(verbose): print(f"Cycle: {meta_cycle}, min_samples: {min_samples}', sample_period: {sample_period}, delta: {delta}, ground_truth_time: {ground_truth_time}, param: {param[0]}x{param[1]}, ground_truth_prob: {ground_truth_prob}")
 
         # Track number of tests
         tests = 0
@@ -334,21 +345,25 @@ def run_param_tests_ground_truth(num_cycles: int, tests_per_cycle: int, param_li
             i = 0
             
             # Test for speed / accuracy for each value in num_samples
-            for fmdp, param, delta, delta_trials, sample_period in zip(fmdp_list, param_list, delta_list, delta_trials, gt_sample_period):
+            for fmdp, param, delta, sample_period in zip(fmdp_list, param_list, delta_list, gt_sample_period):
                 parameter = f"{param[0]}x{param[1]}"
                 
                 # Estimating gibbs sampling marginal probability that P(target_action == target_value) against ground truth delta
                 activation_order = np.random.permutation(list(fmdp._actions))
-                gibbs_prob, gibbs_time_elapsed, gibbs_num_samples = fmdp.delta_sampling(activation_order=activation_order, target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=sample_period, ground_truth=ground_truth[i])
+                gibbs_prob, gibbs_time_elapsed, gibbs_num_samples = fmdp.delta_sampling(activation_order=activation_order, target_action=target_action, target_value=target_value, delta=delta, delta_trials=delta_trials, sample_period=sample_period, minimum_samples=sample_period, ground_truth=ground_truth[i])
 
                 # Testing token sampling marginal probability that P(target_action == target_value) against ground truth delta
                 activation_order = fmdp.derive_activation(target_action)
-                token_prob, token_time_elapsed, token_num_samples = fmdp.delta_sampling(activation_order=activation_order, target_action=target_action, target_value=target_value, delta=delta, sample_period=sample_period, minimum_samples=sample_period, ground_truth=ground_truth[i])
+                token_prob, token_time_elapsed, token_num_samples = fmdp.delta_sampling(activation_order=activation_order, target_action=target_action, target_value=target_value, delta=delta, delta_trials=delta_trials, sample_period=sample_period, minimum_samples=sample_period, ground_truth=ground_truth[i])
 
                 # Place data into dataframe at lowest location : param_data shape = [cycle,sample_type,time_elapsed,num_samples,parameter,delta,delta_trials,gt_sample_period,estimated_distribution]
                 param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{gibbs_samping}', f'{gibbs_time_elapsed}', f'{gibbs_num_samples}', f'{parameter}', f'{delta}', f'{delta_trials}', f'{sample_period}', f'{gibbs_prob}']
                 param_df.loc[len(param_df)] = [f'{meta_cycle}', f'{token_sampling}', f'{token_time_elapsed}', f'{token_num_samples}', f'{parameter}', f'{delta}', f'{delta_trials}', f'{sample_period}', f'{token_prob}']
 
+                if(verbose):
+                    print(f"Cycle: {cycles}, Gibbs sampling, gibbs_time_elapsed: {gibbs_time_elapsed}, parameter: {parameter}, gibbs_prob: {gibbs_prob}")
+                    print(f"Cycle: {cycles}, Token sampling, token_time_elapsed: {token_time_elapsed}, parameter: {parameter}, gibbs_prob: {token_prob}")
+                
                 i += 1
                 
             param_df.to_csv(PARAM_PATH, index=False, header=True)

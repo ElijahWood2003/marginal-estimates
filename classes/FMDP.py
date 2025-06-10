@@ -400,7 +400,7 @@ class FactoredMarkovDecisionProcess:
         
         return self.joint_distribution_to_marginal_probability(joint_distribution=joint_distribution, action=action, value=value), run_time
 
-    # NOTE: Arbitrary method (use sampling_delta)
+    # NOTE: Obscelete method (use sampling_delta)
     def gibbs_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1) -> float:
         """
         Estimate the marginal distribution by using gibbs sampling,
@@ -607,7 +607,7 @@ class FactoredMarkovDecisionProcess:
             
         return count / (sample_count - burn_in), run_time
     
-    # NOTE: Arbitrary method (use sampling_delta)
+    # NOTE: Obscelete method (use sampling_delta)
     def token_sampling_delta(self, target_action: int, target_value: int, delta: float = 0.0001, delta_trials: int = 5, sample_period: int = 465000, minimum_samples: int = 30000000, initial_config: Dict[int, int] = None, ground_truth: float = -1, ground_truth_trials: int = 5) -> float:
         """
         Estimate the marginal distribution by using token sampling
@@ -778,8 +778,9 @@ class FactoredMarkovDecisionProcess:
         
         if(ground_truth <= 0):
             # Our distributions we will compare to the delta
-            d = [0.0] * delta_trials - 1
+            d = [0.0] * (delta_trials - 1)
             d.append(1.0)
+            dlen = len(d)
 
             while((max(d) - min(d)) > delta or sample_count < minimum_samples):
                 action = activation_order[sample_count % order_length]
@@ -806,12 +807,13 @@ class FactoredMarkovDecisionProcess:
 
                 # Check if we are at a new sample period
                 if(sample_count % sample_period == 0 and sample_count >= minimum_samples - sample_period):
-                    d[d_val] = count / sample_count
+                    d[d_val % dlen] = count / sample_count
                     d_val += 1
         else:
             # Our distributions we will compare to the delta
-            d = [0.0] * delta_trials - 1
+            d = [0.0] * (delta_trials - 1)
             d.append(1.0)
+            dlen = len(d)
             
             # If ground_truth > 0 then we want to check if all values in the last trial# distributions are within the 
             # delta of the ground_truth
@@ -840,7 +842,7 @@ class FactoredMarkovDecisionProcess:
 
                 # Set d1 when we have cycled through entire activation sequence
                 if(sample_count % sample_period == 0):
-                    d[d_val] = count / sample_count
+                    d[d_val % dlen] = count / sample_count
                     d_val += 1
 
                     if(sample_count > max_samples):
@@ -851,4 +853,4 @@ class FactoredMarkovDecisionProcess:
         run_time = end - start
         
         # Return the last distribution sampled
-        return d[d_val - 1], run_time, sample_count
+        return d[(d_val - 1) % dlen], run_time, sample_count

@@ -81,22 +81,33 @@ def test_param():
     """
     Parameterized neighborhood MRF example.
     Dimensions given as a list of tuples in param_list.
-    Output goes to data files.
+    Output goes to data files.`
     """
-    # Varibles for testing
+    # Variables for testing
     num_cycles = 1
     tests_per_cycle = 5
     param_list = [(10, 10), (20, 20), (50, 50)]
     domain = [0, 1]
     target_action = 0
     target_value = 0
-    delta_list = [0.00001, 0.0001, 0.001]
-    gt_delta = [0.0001, 0.0001, 0.0001]
-    gt_min_samples = [50000000, 50000000, 60000000]    # 50m, 75m, 100m
+    delta_list = [0.0001, 0.001, 0.01]
+    minimum_samples = 0
+    sample_period_list = [750000, 1000000, 1250000]
+    delta_trials = 5
+    
+    # delta_list = [0.00001, 0.0001, 0.001]
+    gt_delta = [0.01, 0.01, 0.1]
+    # gt_min_samples = [50000000, 50000000, 60000000]    # 50m, 75m, 100m
+    gt_min_samples = [1000000, 1500000, 2500000]
     gt_sample_period = [1000000, 1500000, 2500000]
-    # sample_period_list = [750000, 1500000, 2000000]
+    
     # minimum_samples = 2500000
-    test.run_param_tests_ground_truth(num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta_list=delta_list, gt_delta=gt_delta, gt_min_samples=gt_min_samples, gt_sample_period=gt_sample_period)
+    
+    # Verbose messages or not
+    VERBOSE = True
+    
+    test.run_param_tests(verbose=VERBOSE, num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta_list=delta_list, delta_trials=delta_trials, minimum_samples=minimum_samples, sample_period_list=sample_period_list)
+    # test.run_param_tests_ground_truth(verbose=VERBOSE, num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta_list=delta_list, delta_trials=delta_trials, gt_delta=gt_delta, gt_min_samples=gt_min_samples, gt_sample_period=gt_sample_period)
 
 test_param()
 # test.graph_param_data()
