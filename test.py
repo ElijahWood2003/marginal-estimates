@@ -519,26 +519,26 @@ def graph_param_data(cycles=None):
     if cycles is not None:
         df = df[df['cycle'].isin(cycles)]
     averaged_df = df.groupby(['parameter', 'sample_type'])['time_elapsed'].mean().reset_index()
-    averaged_distribution = df.groupby(['parameter', 'cycle'])['estimated_distribution'].mean().reset_index()
-    averaged_distribution = averaged_distribution.rename(columns={'estimated_distribution' : 'ground_truth'})
+    averaged_distribution = df.groupby(['parameter', 'cycle', 'sample_type'])['estimated_distribution'].mean().reset_index()
+    # averaged_distribution = averaged_distribution.rename(columns={'estimated_distribution' : 'ground_truth'})
     # print(averaged_distribution)
     
-    # Merge with set time data
-    merged = pd.merge(df, averaged_distribution[['ground_truth']], 
-                    left_on='cycle', right_index=True,
-                    suffixes=('', '_ground_truth'))
+    # # Merge with set time data
+    # merged = pd.merge(df, averaged_distribution[['ground_truth']], 
+    #                 left_on='cycle', right_index=True,
+    #                 suffixes=('', '_ground_truth'))
 
     # Calculate absolute difference from ground truth
-    merged['abs_diff'] = np.abs(merged['estimated_distribution'] - 
-                        merged['ground_truth'])
+    # averaged_distribution['abs_diff'] = np.abs(merged['estimated_distribution'] - 
+    #                     merged['ground_truth'])
     
     # Group by sample_type and parameter to get mean differences
-    plot_data = merged.groupby(['sample_type', 'parameter'])['abs_diff'].mean().reset_index()
+    plot_data = df.groupby(['sample_type', 'parameter'])['time_elapsed'].mean().reset_index()
     
     print(plot_data)
 
     # Pivot the data for grouped bar plotting
-    pivot_df = plot_data.pivot(index='parameter', columns='sample_type', values='abs_diff')
+    pivot_df = plot_data.pivot(index='parameter', columns='sample_type', values='time_elapsed')
 
     # Plotting
     ax = pivot_df.plot(kind='bar', figsize=(10, 6), color=['skyblue', 'salmon'], width=0.8)

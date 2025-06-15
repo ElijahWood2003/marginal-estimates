@@ -84,7 +84,7 @@ def test_param():
     Output goes to data files.`
     """
     # Variables for testing
-    num_cycles = 1
+    num_cycles = 6
     tests_per_cycle = 5
     param_list = [(10, 10), (20, 20), (50, 50)]
     domain = [0, 1]
@@ -109,5 +109,5 @@ def test_param():
     test.run_param_tests(verbose=VERBOSE, num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta_list=delta_list, delta_trials=delta_trials, minimum_samples=minimum_samples, sample_period_list=sample_period_list)
     # test.run_param_tests_ground_truth(verbose=VERBOSE, num_cycles=num_cycles, tests_per_cycle=tests_per_cycle, param_list=param_list, domain=domain, target_action=target_action, target_value=target_value, delta_list=delta_list, delta_trials=delta_trials, gt_delta=gt_delta, gt_min_samples=gt_min_samples, gt_sample_period=gt_sample_period)
 
-test_param()
-# test.graph_param_data()
+# test_param()
+test.graph_param_data()
